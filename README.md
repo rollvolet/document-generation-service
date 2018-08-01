@@ -10,7 +10,9 @@ services:
 ```
 
 ## Configuration
-n/a
+The following environment variables can be configured:
+* `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch
+* `OFFER_TEMPLATE_FR`: absolute path of the offer template in French
 
 ## API
 ### POST /documents/visit-report
