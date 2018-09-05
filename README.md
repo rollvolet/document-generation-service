@@ -17,3 +17,6 @@ The following environment variables can be configured:
 ## API
 ### POST /documents/visit-report
 Generates a visit report (PDF file) for a given customer request. The request body must contain a customer request, including the related customer, contact, building, way-of-entry, language and visit.
+
+### POST /documents/offer
+Generates an offer (PDF file) for a given offer with a set of offerlines. The request body must contain the visitor initials and an offer. The offer must include the related offerlines with VAT rate, customer, contact, building, request and customer/contact telephones.
