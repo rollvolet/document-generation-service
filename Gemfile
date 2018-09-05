@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
-gem 'sinatra', '2.0.0'
-gem 'sinatra-contrib', '2.0.0'
+gem 'sinatra', '2.0.3'
+gem 'sinatra-contrib', '2.0.3'
 gem 'prawn', '2.2.0'
 gem 'wkhtmltopdf-binary', '0.12.4'
 gem 'wicked_pdf', '1.1.0'
