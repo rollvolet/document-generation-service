@@ -6,13 +6,15 @@ To add the service to your stack, add the following snippet to `docker-compose.y
 ```yaml
 services:
   documents:
-    image: my-build-of-service
+    image: rollvolet/document-generation-service
+    volumes:
+      - ./config/templates:/templates
 ```
 
 ## Configuration
 The following environment variables can be configured:
-* `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch
-* `OFFER_TEMPLATE_FR`: absolute path of the offer template in French
+* `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch (default: `/templates/offerte-nl.html`)
+* `OFFER_TEMPLATE_FR`: absolute path of the offer template in French (default: `/templates/offerte-fr.html`)
 
 ## API
 ### POST /documents/visit-report
