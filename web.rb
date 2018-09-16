@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'sinatra'
-require 'better_errors'
+require 'better_errors' if development?
 require 'json'
 
 require_relative 'lib/visit-report'
