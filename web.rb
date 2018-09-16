@@ -1,7 +1,6 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'sinatra'
-require 'pry'
 require 'better_errors'
 require 'json'
 
