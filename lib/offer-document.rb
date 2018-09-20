@@ -21,9 +21,6 @@ def generate_offer_document(path, data)
   offerlines = generate_offerlines(data)
   html.sub! '<!-- {{OFFERLINES}} -->', offerlines
 
-  total_price = generate_total_price(data)
-  html.sub! '<!-- {{TOTAL}} -->', total_price
-
   html.sub! '<!-- {{CONDITIONS}} -->', data['documentOutro'] if data['documentOutro']
 
   write_to_pdf(path, html)
@@ -159,11 +156,6 @@ def generate_references(data)
 
   references += "<b>Uw referentie:</b> #{data['reference']}<br/>" if data['reference']
   references
-end
-
-def generate_total_price(data)
-  total_price = data['offerlines'].map { |o| o['amount'] }.reduce(0, :+)
-  "&euro; #{format_decimal(total_price)}"
 end
 
 def format_decimal(number)
