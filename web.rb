@@ -7,17 +7,6 @@ require 'json'
 require_relative 'lib/visit-report'
 require_relative 'lib/offer-document'
 
-# TODO remove monkey patch for debugging
-class WickedPdf
-  def in_development_mode?
-    true
-  end
-
-  def print_command(cmd)
-    puts cmd
-  end
-end
-
 # TODO file cleanup job?
 
 configure :development do
@@ -25,6 +14,17 @@ configure :development do
   BetterErrors::Middleware.allow_ip! '0.0.0.0/0'
   # you need to set the application root in order to abbreviate filenames within the application:
   BetterErrors.application_root = File.expand_path('..', __FILE__)
+
+  class WickedPdf # monkey patch useful for debugging
+    def in_development_mode?
+      true
+    end
+
+    def print_command(cmd)
+      puts cmd
+    end
+  end
+
 end
 
 post '/documents/visit-report' do
