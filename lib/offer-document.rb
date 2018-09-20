@@ -147,7 +147,7 @@ def generate_references(data)
   request = data['request']
   own_reference = ''
   if request
-    own_reference += request['id'].to_s
+    own_reference += "AD#{request['id']}"
     visit = request['visit']
     own_reference += "/#{visit['visitor']}" if visit and visit['visitor']
   end
