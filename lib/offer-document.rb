@@ -1,28 +1,43 @@
+# coding: utf-8
 require 'wicked_pdf'
+require 'htmlentities'
+
+class HTMLEntities
+  class Encoder
+    def basic_entity_regexp
+      # Don't encode <, >, ', " and &.
+      # They are part of the HTML markup and don't need to be displayed as literal characters
+      # https://github.com/threedaymonk/htmlentities/blob/049ec3b63c2fcc86fc58ca6e65310482be5a0891/lib/htmlentities/encoder.rb#L41
+      @basic_entity_regexp ||= /["]/
+    end
+  end
+end
 
 def generate_offer_document(path, data)
+  coder = HTMLEntities.new
+
   language = select_language(data)
   template_path = select_template(data, language)
   html = File.open(template_path, 'rb') { |file| file.read }
 
-  references = generate_references(data, language)
+  references = coder.encode(generate_references(data, language), :named)
   html.sub! '<!-- {{REFERENCES}} -->', references
 
-  building = generate_building(data, language)
+  building = coder.encode(generate_building(data, language), :named)
   html.sub! '<!-- {{BUILDING}} -->', "<div class='building'>#{building}</div>" if building
 
-  contactlines = generate_contactlines(data)
+  contactlines = coder.encode(generate_contactlines(data), :named)
   html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
 
-  addresslines = generate_addresslines(data)
+  addresslines = coder.encode(generate_addresslines(data), :named)
   html.sub! '<!-- {{ADDRESSLINES}} -->', addresslines
 
-  html.sub! '<!-- {{INTRO}} -->', data['documentIntro'] if data['documentIntro']
+  html.sub! '<!-- {{INTRO}} -->', coder.encode(data['documentIntro'], :named) if data['documentIntro']
 
-  offerlines = generate_offerlines(data)
+  offerlines = coder.encode(generate_offerlines(data), :named)
   html.sub! '<!-- {{OFFERLINES}} -->', offerlines
 
-  html.sub! '<!-- {{CONDITIONS}} -->', data['documentOutro'] if data['documentOutro']
+  html.sub! '<!-- {{CONDITIONS}} -->', coder.encode(data['documentOutro'], :named) if data['documentOutro']
 
   write_to_pdf(path, html)
 end
@@ -82,7 +97,7 @@ def generate_addresslines(data)
   name += " #{customer['name']}" if customer['name']
   name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
   name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not customer['printInFront']
-  
+
   addresslines = if name then "#{name}<br/>" else "" end
   addresslines += "#{customer['address1']}<br/>" if customer['address1']
   addresslines += "#{customer['address2']}<br/>" if customer['address2']
@@ -108,7 +123,7 @@ def generate_building(data, language)
     addresslines = "#{name}<br/>"
     addresslines += "<span>#{building['address1']}</span><br/>" if building['address1']
     addresslines += "<span>#{building['address2']}</span><br/>" if building['address2']
-    addresslines += "<span>#{building['address3']}</span><br/>" if building['address3']    
+    addresslines += "<span>#{building['address3']}</span><br/>" if building['address3']
     addresslines += "<span>#{building['postalCode']} #{building['city']}</span>" if building['postalCode'] or building['city']
     addresslines
   else
@@ -148,8 +163,8 @@ end
 def generate_references(data, language)
   # TODO Move language dependent fragments to the HTML template
   offer_date_label = if language == 'FRA' then 'Date' else 'Offertedatum' end
-  own_reference_label = if language == 'FRA' then 'Notre référence' else 'Onze referentie' end
-  ext_reference_label = if language == 'FRA' then 'Votre référence' else 'Uw referentie' end
+  own_reference_label = if language == 'FRA' then 'Notre r&eacute;f&eacute;rence' else 'Onze referentie' end
+  ext_reference_label = if language == 'FRA' then 'Votre r&eacute;f&eacute;rence' else 'Uw referentie' end
 
   offer_date = DateTime.parse(data['offerDate']).strftime("%d/%m/%Y") if data['offerDate']
   references = "<b>#{offer_date_label}:</b> #{offer_date}<br/><br/>"
