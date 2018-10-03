@@ -1,13 +1,14 @@
 require 'wicked_pdf'
 
 def generate_offer_document(path, data)
-  template_path = select_template(data)
+  language = select_language(data)
+  template_path = select_template(data, language)
   html = File.open(template_path, 'rb') { |file| file.read }
 
-  references = generate_references(data)
+  references = generate_references(data, language)
   html.sub! '<!-- {{REFERENCES}} -->', references
 
-  building = generate_building(data)
+  building = generate_building(data, language)
   html.sub! '<!-- {{BUILDING}} -->', "<div class='building'>#{building}</div>" if building
 
   contactlines = generate_contactlines(data)
@@ -52,14 +53,17 @@ end
 
 # Language is determined by the language of the contact (if one is attached to the offer) or customer.
 # Languafe of the building doesn't matter
-def select_template(data)
+def select_language(data)
   language = 'NED'
   if data['contact'] and data['contact']['language']
     language = data['contact']['language']['code']
   elsif data['customer'] and data['customer']['language']
     language = data['customer']['language']['code']
   end
+  language
+end
 
+def select_template(data, language)
   if language == 'FRA'
     ENV['OFFER_TEMPLATE_FR'] || '/templates/offerte-fr.html'
   else
@@ -89,12 +93,13 @@ def generate_addresslines(data)
   addresslines
 end
 
-def generate_building(data)
+def generate_building(data, language)
   building = data['building']
   
   if building
     hon_prefix = building['honorificPrefix']
-    name = '<b>Betreft:</b> '
+    # TODO Move language dependent fragments to the HTML template
+    name = if language == 'FRA' then '<b>Concerne:</b>' else '<b>Betreft:</b> ' end
     name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and building['printInFront']
     name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
     name += " #{building['name']}" if building['name']
@@ -140,9 +145,14 @@ def generate_offerlines(data)
   offerlines.join
 end
 
-def generate_references(data)
+def generate_references(data, language)
+  # TODO Move language dependent fragments to the HTML template
+  offer_date_label = if language == 'FRA' then 'Date' else 'Offertedatum' end
+  own_reference_label = if language == 'FRA' then 'Notre référence' else 'Onze referentie' end
+  ext_reference_label = if language == 'FRA' then 'Votre référence' else 'Uw referentie' end
+
   offer_date = DateTime.parse(data['offerDate']).strftime("%d/%m/%Y") if data['offerDate']
-  references = "<b>Offertedatum:</b> #{offer_date}<br/><br/>"
+  references = "<b>#{offer_date_label}:</b> #{offer_date}<br/><br/>"
 
   request = data['request']
   own_reference = ''
@@ -154,9 +164,9 @@ def generate_references(data)
   own_reference += " <span class='note'>("
   own_reference += "#{data['number']} #{data['documentVersion']}".strip
   own_reference += ")</span>"
-  references += "<b>Onze referentie:</b> #{own_reference}<br/>"
+  references += "<b>#{own_reference_label}:</b> #{own_reference}<br/>"
 
-  references += "<b>Uw referentie:</b> #{data['reference']}<br/>" if data['reference']
+  references += "<b>#{ext_reference_label}:</b> #{data['reference']}<br/>" if data['reference']
   references
 end
 
