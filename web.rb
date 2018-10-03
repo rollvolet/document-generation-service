@@ -45,8 +45,8 @@ post '/documents/offer' do
 
   # Workaround to embed visitor initals in the offer object
   data = json_body['offer']
-  if data['request'] and data['request']['visit']
-    data['request']['visit']['visitor'] = json_body['visitor']
+  if data['request']
+    data['request']['visit'] = { 'visitor' => json_body['visitor'] }
   end
 
   id = data['id']
