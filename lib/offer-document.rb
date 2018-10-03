@@ -151,7 +151,9 @@ def generate_references(data)
     visit = request['visit']
     own_reference += "/#{visit['visitor']}" if visit and visit['visitor']
   end
-  own_reference += " <span class='note'>(#{data['number']})</span>"
+  own_reference += " <span class='note'>("
+  own_reference += "#{data['number']} #{data['documentVersion']}".strip
+  own_reference += ")</span>"
   references += "<b>Onze referentie:</b> #{own_reference}<br/>"
 
   references += "<b>Uw referentie:</b> #{data['reference']}<br/>" if data['reference']
