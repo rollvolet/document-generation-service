@@ -98,10 +98,10 @@ def generate_addresslines(data)
   name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
   name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not customer['printInFront']
 
-  addresslines = if name then "#{name}<br/>" else "" end
-  addresslines += "#{customer['address1']}<br/>" if customer['address1']
-  addresslines += "#{customer['address2']}<br/>" if customer['address2']
-  addresslines += "#{customer['address3']}<br/>" if customer['address3']
+  addresslines = if name then "#{name}<br>" else "" end
+  addresslines += "#{customer['address1']}<br>" if customer['address1']
+  addresslines += "#{customer['address2']}<br>" if customer['address2']
+  addresslines += "#{customer['address3']}<br>" if customer['address3']
   addresslines += customer['postalCode'] if customer['postalCode']
   addresslines += " #{customer['city']}" if customer['city']
 
@@ -112,20 +112,26 @@ def generate_building(data, language)
   building = data['building']
   
   if building
-    hon_prefix = building['honorificPrefix']
     # TODO Move language dependent fragments to the HTML template
-    name = if language == 'FRA' then '<b>Concerne:</b>' else '<b>Betreft:</b> ' end
+    building_address_label = if language == 'FRA' then 'Concerne' else 'Betreft' end
+
+    hon_prefix = building['honorificPrefix']
+    name = ''
     name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and building['printInFront']
     name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
     name += " #{building['name']}" if building['name']
     name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
     name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not building['printInFront']
-    addresslines = "#{name}<br/>"
-    addresslines += "<span>#{building['address1']}</span><br/>" if building['address1']
-    addresslines += "<span>#{building['address2']}</span><br/>" if building['address2']
-    addresslines += "<span>#{building['address3']}</span><br/>" if building['address3']
-    addresslines += "<span>#{building['postalCode']} #{building['city']}</span>" if building['postalCode'] or building['city']
-    addresslines
+    addresslines = "#{name}<br>"
+    addresslines += "#{building['address1']}<br>" if building['address1']
+    addresslines += "#{building['address2']}<br>" if building['address2']
+    addresslines += "#{building['address3']}<br>" if building['address3']
+    addresslines += "#{building['postalCode']} #{building['city']}" if building['postalCode'] or building['city']
+
+    building_address = "<table>"
+    building_address += "<tr><td class='key'>#{building_address_label}:</td><td>#{addresslines}</td></tr>"
+    building_address += "</table>"
+    building_address
   else
     nil
   end
@@ -167,21 +173,21 @@ def generate_references(data, language)
   ext_reference_label = if language == 'FRA' then 'Votre r&eacute;f&eacute;rence' else 'Uw referentie' end
 
   offer_date = DateTime.parse(data['offerDate']).strftime("%d/%m/%Y") if data['offerDate']
-  references = "<b>#{offer_date_label}:</b> #{offer_date}<br/><br/>"
 
   request = data['request']
   own_reference = ''
   if request
-    own_reference += "AD#{request['id']}"
+    own_reference += "<b>AD #{request['id']}</b>"
     visit = request['visit']
-    own_reference += "/#{visit['visitor']}" if visit and visit['visitor']
+    own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
   end
-  own_reference += " <span class='note'>("
-  own_reference += "#{data['number']} #{data['documentVersion']}".strip
-  own_reference += ")</span>"
-  references += "<b>#{own_reference_label}:</b> #{own_reference}<br/>"
+  own_reference += "<br><span class='note'>#{data['number']} #{data['documentVersion']}</span>"
 
-  references += "<b>#{ext_reference_label}:</b> #{data['reference']}<br/>" if data['reference']
+  references = "<table>"
+  references += "<tr><td class='key'>#{offer_date_label}:</td><td>#{offer_date}</td></tr>"
+  references += "<tr><td class='key'>#{own_reference_label}:</td><td>#{own_reference}</td></tr>"
+  references += "<tr><td class='key'>#{ext_reference_label}:</td><td>#{data['reference']}</td></tr>" if data['reference']
+  references += "</table>"
   references
 end
 
