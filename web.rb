@@ -6,6 +6,7 @@ require 'json'
 
 require_relative 'lib/visit-report'
 require_relative 'lib/offer-document'
+require_relative 'lib/invoice-document'
 
 # TODO file cleanup job?
 
@@ -52,7 +53,27 @@ post '/documents/offer' do
   id = data['id']
   path = "/tmp/#{id}-offerte.pdf"
 
-  generate_offer_document(path, data)
+  generator = DocumentGenerator::OfferDocument.new
+  generator.generate(path, data)
+
+  # TODO cleanup temporary created files of WickedPdf
+  
+  send_file path
+end
+
+post '/documents/invoice' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  # Workaround to embed visitor initals in the offer object
+  data = json_body['invoice']
+  data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
+
+  id = data['id']
+  path = "/tmp/#{id}-factuur.pdf"
+
+  generator = DocumentGenerator::InvoiceDocument.new
+  generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
   
