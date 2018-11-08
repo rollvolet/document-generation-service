@@ -110,6 +110,15 @@ module DocumentGenerator
       end
     end    
 
+    def generate_invoice_number(data)
+      number = data['number'].to_s
+      "#{number[0..1]}/#{number[2..-1]}"
+      end
+
+    def generate_invoice_date(data)
+      if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
+    end
+        
     def format_decimal(number)
       if number then sprintf("%0.2f", number).gsub(/(\d)(?=\d{3}+\.)/, '\1 ').gsub(/\./, ',') else '' end
     end

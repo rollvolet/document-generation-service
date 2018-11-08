@@ -68,15 +68,6 @@ module DocumentGenerator
     end
 
 
-    def generate_invoice_number(data)
-      number = data['number'].to_s
-      "#{number[0..1]}/#{number[2..-1]}"
-      end
-
-    def generate_invoice_date(data)
-      if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
-    end
-    
     def generate_own_reference(data)
       order = data['order']
       if order

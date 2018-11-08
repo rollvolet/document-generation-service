@@ -7,6 +7,7 @@ require 'json'
 require_relative 'lib/visit-report'
 require_relative 'lib/offer-document'
 require_relative 'lib/invoice-document'
+require_relative 'lib/vat-certificate'
 
 # TODO file cleanup job?
 
@@ -74,6 +75,21 @@ post '/documents/invoice' do
 
   generator = DocumentGenerator::InvoiceDocument.new
   generator.generate(path, data)
+
+  # TODO cleanup temporary created files of WickedPdf
+  
+  send_file path
+end
+
+post '/documents/certificate' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  id = json_body['id']
+  path = "/tmp/#{id}-attest.pdf"
+
+  generator = DocumentGenerator::VatCertificate.new
+  generator.generate(path, json_body)
 
   # TODO cleanup temporary created files of WickedPdf
   
