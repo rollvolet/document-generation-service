@@ -1,143 +1,141 @@
-require 'prawn'
+require 'wicked_pdf'
+require_relative './htmlentities'
+require_relative './helpers'
 
-def generate_visit_report(path, data)
-  Prawn::Document.generate(path, page_size: 'A4', page_layout: :portrait) do |pdf|
-    # pdf.stroke_axis
-    pdf.font_size 10
-    pdf.font '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'
+module DocumentGenerator
+  class VisitReport
 
-    gap = 10
-    y_coordinate = 780 # top of the page
-    columns = [300, 140, 80] # widths of the columns in the header
-    max_height = 0 # keep track of the highest stretchy bounding box (since Prawn doesn't)
+    include DocumentGenerator::Helpers
 
-    # First header row
+    def initialize
+      @inline_css = ''
+    end
+    
+    def generate(path, data)
+      coder = HTMLEntities.new
 
-    pdf.bounding_box([0, y_coordinate], width: columns[0]) do
-      lines = customer_address_lines data['customer']
-      lines.each { |line| pdf.text line }
+      template_path = select_template
+      html = File.open(template_path, 'rb') { |file| file.read }
 
-      if data['building']
-        pdf.move_down 5
-        pdf.text 'Gebouw:'
-        lines = building_address_lines data['building']
-        lines.each { |line| pdf.text line }
-      end
+      request_date = generate_request_date(data)
+      html.sub! '<!-- {{DATE}} -->', request_date  
+      
+      request_number = generate_request_number(data)
+      html.sub! '<!-- {{NUMBER}} -->', request_number
 
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
+      way_of_entry = (data['wayOfEntry'] && data['wayOfEntry']['name']) || ''
+      html.sub! '<!-- {{WAY_OF_ENTRY}} -->', way_of_entry
+
+      visit = generate_visit(data)
+      html.sub! '<!-- {{VISIT}} -->', visit
+      
+      visitor = (data['visit'] && data['visit']['visitor']) || ''
+      html.sub! '<!-- {{VISITOR}} -->', visitor
+      
+      language = generate_language(data)
+      html.sub! '<!-- {{LANGUAGE}} -->', language
+
+      customer_name = generate_customer_name(data)
+      html.sub! '<!-- {{CUSTOMER_NAME}} -->', customer_name        
+
+      customer_address = coder.encode(generate_customer_address(data), :named)
+      html.sub! '<!-- {{CUSTOMER_ADDRESS}} -->', customer_address
+
+      building_address = coder.encode(generate_building_address(data), :named)
+      html.sub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
+
+      employee = data['employee'] || ''
+      html.sub! '<!-- {{EMPLOYEE}} -->', employee
+      
+      comment = data['comment'] || ''
+      html.sub! '<!-- {{COMMENT}} -->', comment
+      
+      customer_email_address = generate_customer_email_address(data)
+      html.sub! '<!-- {{CUSTOMER_EMAIL_ADDRESS}} -->', customer_email_address        
+
+      contact_email_address = generate_contact_email_address(data)
+      html.sub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address        
+
+      contactlines = coder.encode(generate_contactlines(data), :named)
+      html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
+
+      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
+
+      write_to_pdf(path, html)
     end
 
-    pdf.bounding_box([columns[0], y_coordinate], width: columns[1]) do
-      if data['requestDate']
-        date = Date.parse data['requestDate']
-        pdf.text 'Aanvraag: ' + date.strftime("%d-%m-%Y")
+    def select_template
+      ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'      
+    end
+
+    def generate_language(data)
+      if data['contact'] and data['contact']['language']
+        data['contact']['language']['code']
+      elsif data['customer']['language']
+        data['customer']['language']['code']
+      else
+        ''
       end
+    end
+
+    def generate_visit(data)
+      visit = ''
+      
       if data['visit'] and data['visit']['visitDate']
-        date = Date.parse data['visit']['visitDate']
-        pdf.text 'Bezoek:     ' + date.strftime("%d-%m-%Y")
+        visit += format_date(data['visit']['visitDate'])
 
         if data['visit']['calendarSubject']
           period = data['visit']['calendarSubject'].split(data['customer']['name']).first.chop
-          pdf.indent(55) { pdf.text period }
+          visit += "; #{period}"
         end
       end
 
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
+      visit
     end
 
-    pdf.bounding_box([columns[0] + columns[1], y_coordinate], width:  columns[2]) do
-      pdf.text "Nr:    #{data['id']}"
+    def generate_customer_name(data)
+      customer = data['customer']
+      honorific_prefix = customer['honorificPrefix']
       
-      language = 'Taal: '
-      language += data['customer']['language']['code'] if data['customer']['language']
-      pdf.text language
+      name = ''
+      name += honorific_prefix['name'] if honorific_prefix and customer['printInFront']
+      name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
+      name += " #{customer['name']}" if customer['name']
+      name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
+      name += " #{honorific_prefix['name']}" if honorific_prefix and not customer['printInFront']
+      name
+    end
+
+    def generate_customer_address(data)
+      customer = data['customer']
+      [ customer['address1'],
+        customer['address2'],
+        customer['address3'],
+        "#{customer['postalCode']} #{customer['city']}"
+      ].find_all { |a| a }.join(', ')
+    end
+
+    def generate_building_address(data)
+      building = data['building']
       
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
+      if building
+        [ building['address1'],
+          building['address2'],
+          building['address3'],
+          "#{building['postalCode']} #{building['city']}"
+        ].find_all { |a| a }.join(', ')
+      else
+        generate_customer_address(data)
+      end
     end
 
-    # End of first header row
-
-    y_coordinate = y_coordinate - max_height - gap
-    max_height = 0
-    
-    # Second header row
-    
-    pdf.bounding_box([0, y_coordinate], width: columns[0]) do
-      way_of_entry = 'Aanmelding: '
-      way_of_entry += data['wayOfEntry']['name'] if data['wayOfEntry']
-      pdf.text way_of_entry
-
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
-    end
-    
-    pdf.bounding_box([columns[0], y_coordinate], width: columns[1]) do
-      visitor = 'Bezoeker: '
-      visitor += data['visit']['visitor'] if data['visit']
-      pdf.text visitor
-      
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
+    def generate_customer_email_address(data)
+      [ data['customer']['email'], data['customer']['email2'] ].find_all { |a| a }.join(', ')
     end
 
-    # End of second header row
-
-    pdf.move_down 5
-    pdf.stroke_horizontal_rule
-
-    pdf.move_down gap
-
-    y_coordinate = y_coordinate - max_height - gap - 5
-    max_height = 0
-    
-    # Start of third header row
-    
-    pdf.bounding_box([0, y_coordinate], width: columns[0]) do
-      pdf.text 'Email:'
-      pdf.indent(10) { pdf.text 'Klant: ' + data['customer']['email'] } if data['customer']['email']
-      pdf.indent(45) { pdf.text data['customer']['email2'] } if data['customer']['email2']
-      pdf.indent(10) { pdf.text 'Contact: ' + data['contact']['email'] } if data['contact'] and data['contact']['email']      
-      pdf.text "#{data['employee']} noteerde: #{data['comment'] || ''}"
-
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
+    def generate_contact_email_address(data)
+      if data['contact'] then [ data['contact']['email'], data['contact']['email2'] ].find_all { |a| a }.join(', ') else '' end
     end
 
-    pdf.bounding_box([columns[0] + columns[1], y_coordinate], width: columns[2]) do
-      pdf.text "\u25A2 Post" # checkboxes
-      pdf.text "\u25A2 E-post"
-      
-      max_height = pdf.bounds.height if max_height < pdf.bounds.height
-    end
-
-    # End of third header row
   end
-end
-
-private
-
-def customer_address_lines(customer)
-  honorific_prefix = customer['honorificPrefix']
-  name = ''
-  name += honorific_prefix['name'] if honorific_prefix and customer['printInFront']
-  name += " #{customer['prefix']}" if customer['printPrefix']
-  name += " #{customer['name']}"
-  name += " #{customer['suffix']}" if customer['printSuffix']
-  name += " #{honorific_prefix['name']}" if honorific_prefix and not customer['printInFront']
-  
-  address = [ name ]
-  address += [ customer['address1'], customer['address2'], customer['address3'] ]
-  address << "#{customer['postalCode']} #{customer['city']}"
-  
-  address.find_all { |x| x != nil }
-end
-
-def building_address_lines(building)
-  name = ''
-  name += " #{building['prefix']}" if building['printPrefix']
-  name += " #{building['name']}"
-  name += " #{building['suffix']}" if building['printSuffix']
-  
-  address = [ name ]
-  address += [ building['address1'], building['address2'], building['address3'] ]
-  address << "#{building['postalCode']} #{building['city']}"
-  
-  address.find_all { |x| x != nil }
 end

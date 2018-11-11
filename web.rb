@@ -36,7 +36,10 @@ post '/documents/visit-report' do
   id = json_body['id']
   path = "/tmp/#{id}-bezoekrapport.pdf"
 
-  generate_visit_report(path, json_body)
+  generator = DocumentGenerator::VisitReport.new
+  generator.generate(path, json_body)
+
+  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end

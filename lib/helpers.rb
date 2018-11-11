@@ -112,11 +112,19 @@ module DocumentGenerator
 
     def generate_invoice_number(data)
       number = data['number'].to_s
-      "#{number[0..1]}/#{number[2..-1]}"
-      end
+      "#{number[0..1]}/#{number[2..-1]}"      
+    end
+    
+    def generate_request_number(data)
+      data['id'].to_s
+    end
 
     def generate_invoice_date(data)
       if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
+    end
+        
+    def generate_request_date(data)
+      if data['requestDate'] then format_date(data['requestDate']) else '' end
     end
         
     def format_decimal(number)
