@@ -35,7 +35,7 @@ module DocumentGenerator
       language = generate_language(data)
       html.sub! '<!-- {{LANGUAGE}} -->', language
 
-      customer_name = generate_customer_name(data)
+      customer_name = coder.encode(generate_customer_name(data), :named)
       html.sub! '<!-- {{CUSTOMER_NAME}} -->', customer_name        
 
       customer_address = coder.encode(generate_customer_address(data), :named)
@@ -112,7 +112,7 @@ module DocumentGenerator
         customer['address2'],
         customer['address3'],
         "#{customer['postalCode']} #{customer['city']}"
-      ].find_all { |a| a }.join(', ')
+      ].find_all { |a| a }.join('<br>')
     end
 
     def generate_building_address(data)
@@ -123,9 +123,9 @@ module DocumentGenerator
           building['address2'],
           building['address3'],
           "#{building['postalCode']} #{building['city']}"
-        ].find_all { |a| a }.join(', ')
+        ].find_all { |a| a }.join('<br>')
       else
-        generate_customer_address(data)
+        hide_element('table .col .building-address')
       end
     end
 
