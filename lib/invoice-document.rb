@@ -53,6 +53,8 @@ module DocumentGenerator
       html.sub! '<!-- {{TOTAL_PAID}} -->', format_decimal(pricing[:total_paid])
       html.sub! '<!-- {{TOTAL_GROSS_PRICE}} -->', format_decimal(pricing[:total_gross_price])
 
+      generate_certificate_notification(data)
+
       html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
 
       write_to_pdf(path, html, '/templates/offerte-footer.html')
@@ -135,6 +137,10 @@ module DocumentGenerator
         total_paid: total_paid,
         total_gross_price: total_gross_price
       }
+    end
+
+    def generate_certificate_notification(data)
+      hide_element('certificate-notification') if not data['certificateRequired'] or data['certificateReceived']
     end
   end
 end
