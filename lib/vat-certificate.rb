@@ -12,10 +12,9 @@ module DocumentGenerator
       @inline_css = ''
     end
     
-    def generate(path, data)
+    def generate(path, data, language)
       coder = HTMLEntities.new
 
-      language = select_language(data)
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
       

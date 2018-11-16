@@ -72,12 +72,13 @@ post '/documents/invoice' do
   # Workaround to embed visitor initals in the offer object
   data = json_body['invoice']
   data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
+  language = json_body['language']
 
   id = data['id']
   path = "/tmp/#{id}-factuur.pdf"
 
   generator = DocumentGenerator::InvoiceDocument.new
-  generator.generate(path, data)
+  generator.generate(path, data, language)
 
   # TODO cleanup temporary created files of WickedPdf
   
@@ -88,11 +89,14 @@ post '/documents/certificate' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  id = json_body['id']
+  data = json_body['invoice']
+  language = json_body['language']
+
+  id = data['id']
   path = "/tmp/#{id}-attest.pdf"
 
   generator = DocumentGenerator::VatCertificate.new
-  generator.generate(path, json_body)
+  generator.generate(path, data, language)
 
   # TODO cleanup temporary created files of WickedPdf
   
