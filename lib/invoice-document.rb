@@ -19,16 +19,16 @@ module DocumentGenerator
       html = File.open(template_path, 'rb') { |file| file.read }
 
       invoice_number = generate_invoice_number(data)
-      html.sub! '<!-- {{NUMBER}} -->', invoice_number  
-      
+      html.sub! '<!-- {{NUMBER}} -->', invoice_number
+
       invoice_date = generate_invoice_date(data)
-      html.sub! '<!-- {{DATE}} -->', invoice_date  
+      html.sub! '<!-- {{DATE}} -->', invoice_date
 
       customer_number = data['customer']['number'].to_s
-      html.sub! '<!-- {{CUSTOMER_NUMBER}} -->', customer_number  
-      
+      html.sub! '<!-- {{CUSTOMER_NUMBER}} -->', customer_number
+
       own_reference = coder.encode(generate_own_reference(data), :named)
-      html.sub! '<!-- {{OWN_REFERENCE}} -->', own_reference  
+      html.sub! '<!-- {{OWN_REFERENCE}} -->', own_reference
 
       ext_reference = coder.encode(generate_ext_reference(data), :named)
       html.sub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
@@ -37,7 +37,7 @@ module DocumentGenerator
       building = coder.encode(generate_building(data), :named)
       html.sub! '<!-- {{BUILDING}} -->', building
 
-      # TODO must be the embedded customer instead of the referenced      
+      # TODO must be the embedded customer instead of the referenced
       addresslines = coder.encode(generate_addresslines(data), :named)
       html.sub! '<!-- {{ADDRESSLINES}} -->', addresslines
 
@@ -50,12 +50,16 @@ module DocumentGenerator
       html.sub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
       html.sub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
       html.sub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
-      html.sub! '<!-- {{TOTAL_PAID}} -->', format_decimal(pricing[:total_paid])
+      html.sub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits])
+      html.sub! '<!-- {{TOTAL_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_deposit_invoices])
       html.sub! '<!-- {{TOTAL_GROSS_PRICE}} -->', format_decimal(pricing[:total_gross_price])
+
+      payment_due_date = generate_payment_due_date(data)
+      html.sub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
 
       generate_certificate_notification(data)
 
-      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
+      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       write_to_pdf(path, html, '/templates/offerte-footer.html')
     end
@@ -141,6 +145,15 @@ module DocumentGenerator
         total_deposit_invoices: total_deposit_invoices,
         total_gross_price: total_gross_price
       }
+    end
+
+    def generate_payment_due_date(data)
+      if data['dueDate']
+        format_date(data['dueDate'])
+      else
+        hide_element('payment-notification--deadline')
+        ''
+      end
     end
 
     def generate_certificate_notification(data)
