@@ -11,7 +11,7 @@ module DocumentGenerator
     def initialize
       @inline_css = ''
     end
-    
+
     def generate(path, data, language)
       coder = HTMLEntities.new
 
@@ -85,8 +85,7 @@ module DocumentGenerator
     def generate_pricing(data)
       invoicelines = []
       prices = []
-      paid = []
-      
+
       if data['order']
         # TODO we assume all ordered offerlines have the same VAT rate as the invoice
         data['order']['offer']['offerlines'].find_all { |l| l['isOrdered'] }.each do |offerline|
@@ -101,40 +100,45 @@ module DocumentGenerator
 
       if data['supplements']
         data['supplements'].each do |supplement|
-          nbOfPieces = supplement['nbOfPieces'] || 1.0
-          linePrice = nbOfPieces * supplement['amount']
+          nb_of_pieces = supplement['nbOfPieces'] || 1.0
+          line_price = nb_of_pieces * supplement['amount']
 
-          prices << linePrice
+          prices << line_price
           line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1'>#{nbOfPieces} x #{supplement['description']}</div>"
-          line += "  <div class='col col-2'>&euro; #{format_decimal(linePrice)}</div>"
+          line += "  <div class='col col-1'>#{nb_of_pieces} x #{supplement['description']}</div>"
+          line += "  <div class='col col-2'>&euro; #{format_decimal(line_price)}</div>"
           line += "</div>"
           invoicelines << line
         end
       end
 
+      deposits = []
       if data['deposits']
-        paid += data['deposits'].map { |d| d['amount'] || 0 }
+        deposits = data['deposits'].map { |d| d['amount'] || 0 }
       end
 
+      deposit_invoices = []
       if data['depositInvoices']
-        paid += data['depositInvoices'].map { |d| d['totalAmount'] || 0}
+        deposit_invoices = data['depositInvoices'].map { |d| d['totalAmount'] || 0}
       end
-      
+
       total_net_price = prices.inject(:+) || 0
       vat_rate = data['vatRate']['rate']
       total_vat = total_net_price * vat_rate / 100
-      total_paid = paid.inject(:+) || 0      
-      total_gross_price = total_net_price + total_vat - total_paid
+      total_deposits = deposits.inject(:+) || 0
+      total_deposit_invoices = deposit_invoices.inject(:+) || 0
+      total_gross_price = total_net_price + total_vat - total_deposits - total_deposit_invoices
 
-      hide_element('priceline-paid') if (total_paid == 0)
-      
+      hide_element('priceline-deposit') if (total_deposits == 0)
+      hide_element('priceline-deposit-invoice') if (total_deposit_invoices == 0)
+
       {
         invoicelines: invoicelines.join,
         total_net_price: total_net_price,
         vat_rate: vat_rate,
         total_vat: total_vat,
-        total_paid: total_paid,
+        total_deposits: total_deposits,
+        total_deposit_invoices: total_deposit_invoices,
         total_gross_price: total_gross_price
       }
     end
