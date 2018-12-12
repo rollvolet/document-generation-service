@@ -104,12 +104,18 @@ module DocumentGenerator
 
       if data['supplements']
         data['supplements'].each do |supplement|
-          nb_of_pieces = supplement['nbOfPieces'] || 1.0
-          line_price = nb_of_pieces * supplement['amount']
+          nb = supplement['nbOfPieces'] || 1.0
+          nb_display = if nb % 1 == 0 then nb.floor else format_decimal(nb) end
+
+          unit = supplement['unit'] || ''
+          unit_separator = if unit == 'm' or unit == 'm2' then '' else ' ' end
+          unit = 'm<sup>2</sup>' if unit == 'm2'
+
+          line_price = nb * supplement['amount']
 
           prices << line_price
           line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1'>#{nb_of_pieces} x #{supplement['description']}</div>"
+          line += "  <div class='col col-1'>#{nb_display}#{unit_separator}#{unit} #{supplement['description']}</div>"
           line += "  <div class='col col-2'>&euro; #{format_decimal(line_price)}</div>"
           line += "</div>"
           invoicelines << line
