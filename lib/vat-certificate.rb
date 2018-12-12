@@ -18,20 +18,6 @@ module DocumentGenerator
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
       
-      now = format_date(DateTime.now.to_s)
-      html.sub! '<!-- {{DATE}} -->', now
-
-      customer_number = data['customer']['number'].to_s
-      html.sub! '<!-- {{CUSTOMER_NUMBER}} -->', customer_number  
-      
-      # TODO must be the embedded customer instead of the referenced      
-      addresslines = coder.encode(generate_addresslines(data), :named)
-      html.sub! '<!-- {{ADDRESSLINES}} -->', addresslines
-
-      # TODO must be the embedded customer instead of the referenced
-      contactlines = coder.encode(generate_contactlines(data), :named)
-      html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
-
       customer_name = generate_customer_name(data)
       html.sub! '<!-- {{CUSTOMER_NAME}} -->', customer_name  
 
@@ -76,7 +62,7 @@ module DocumentGenerator
         customer['address2'],
         customer['address3'],
         "#{customer['postalCode']} #{customer['city']}"
-      ].find_all { |a| a }.join(', ')
+      ].find_all { |a| a }.join('<br>')
     end
 
     def generate_building_address(data)
@@ -87,7 +73,7 @@ module DocumentGenerator
           building['address2'],
           building['address3'],
           "#{building['postalCode']} #{building['city']}"
-        ].find_all { |a| a }.join(', ')
+        ].find_all { |a| a }.join('<br>')
       else
         generate_customer_address(data)
       end
