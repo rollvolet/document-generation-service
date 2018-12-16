@@ -29,7 +29,7 @@ module DocumentGenerator
       visit = generate_visit(data)
       html.sub! '<!-- {{VISIT}} -->', visit
       
-      visitor = (data['visit'] && data['visit']['visitor']) || ''
+      visitor = generate_visitor(data)
       html.sub! '<!-- {{VISITOR}} -->', visitor
       
       language = generate_language(data)
@@ -91,6 +91,14 @@ module DocumentGenerator
       end
 
       visit
+    end
+
+    def generate_visitor(data)
+      if data['visit'] and data['visit']['visitor'] and data['visit']['visitor'] != '(geen)'
+        data['visit']['visitor']
+      else
+        ''
+      end
     end
 
     def generate_customer_name(data)
