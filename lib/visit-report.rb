@@ -138,11 +138,21 @@ module DocumentGenerator
     end
 
     def generate_customer_email_address(data)
-      [ data['customer']['email'], data['customer']['email2'] ].find_all { |a| a }.join(', ')
+      emails = []
+      if data['customer']
+        emails = [ data['customer']['email'], data['customer']['email2'] ].find_all { |a| a }
+      end
+
+      if emails.length > 0 then emails.join(', ') else hide_element('email--customer') end
     end
 
     def generate_contact_email_address(data)
-      if data['contact'] then [ data['contact']['email'], data['contact']['email2'] ].find_all { |a| a }.join(', ') else '' end
+      emails = []
+      if data['contact']
+        emails = [ data['contact']['email'], data['contact']['email2'] ].find_all { |a| a }
+      end
+
+      if emails.length > 0 then emails.join(', ') else hide_element('email--contact') end
     end
 
   end
