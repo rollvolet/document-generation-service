@@ -19,41 +19,41 @@ module DocumentGenerator
       html = File.open(template_path, 'rb') { |file| file.read }
 
       invoice_number = generate_invoice_number(data)
-      html.sub! '<!-- {{NUMBER}} -->', invoice_number
+      html.gsub! '<!-- {{NUMBER}} -->', invoice_number
 
       invoice_date = generate_invoice_date(data)
-      html.sub! '<!-- {{DATE}} -->', invoice_date
+      html.gsub! '<!-- {{DATE}} -->', invoice_date
 
       customer_number = data['customer']['number'].to_s
-      html.sub! '<!-- {{CUSTOMER_NUMBER}} -->', customer_number
+      html.gsub! '<!-- {{CUSTOMER_NUMBER}} -->', customer_number
 
       own_reference = coder.encode(generate_own_reference(data), :named)
-      html.sub! '<!-- {{OWN_REFERENCE}} -->', own_reference
+      html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
 
       ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.sub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
+      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
 
       # TODO must be the embedded building instead of the referenced
       building = coder.encode(generate_building(data), :named)
-      html.sub! '<!-- {{BUILDING}} -->', building
+      html.gsub! '<!-- {{BUILDING}} -->', building
 
       # TODO must be the embedded customer instead of the referenced
       addresslines = coder.encode(generate_addresslines(data), :named)
-      html.sub! '<!-- {{ADDRESSLINES}} -->', addresslines
+      html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
 
       # TODO must be the embedded customer instead of the referenced
       contactlines = coder.encode(generate_contactlines(data), :named)
-      html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
+      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
 
       request_number = generate_request_number(data)
-      html.sub! '<!-- {{REQUEST_NUMBER}} -->', request_number
+      html.gsub! '<!-- {{REQUEST_NUMBER}} -->', request_number
 
       pricing = generate_pricing(data)
-      html.sub! '<!-- {{INVOICELINES}} -->', pricing[:invoicelines]
-      html.sub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
-      html.sub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
-      html.sub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
-      html.sub! '<!-- {{TOTAL_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_deposit_invoice])
+      html.gsub! '<!-- {{INVOICELINES}} -->', pricing[:invoicelines]
+      html.gsub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
+      html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
+      html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
+      html.gsub! '<!-- {{TOTAL_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_deposit_invoice])
 
       payment_due_date = generate_payment_due_date(data)
       html.sub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date

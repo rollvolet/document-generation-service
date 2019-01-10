@@ -10,7 +10,7 @@ module DocumentGenerator
     def initialize
       @inline_css = ''
     end
-    
+
     def generate(path, data)
       coder = HTMLEntities.new
 
@@ -19,31 +19,31 @@ module DocumentGenerator
       html = File.open(template_path, 'rb') { |file| file.read }
 
       offer_date = generate_offer_date(data)
-      html.sub! '<!-- {{DATE}} -->', offer_date  
+      html.gsub! '<!-- {{DATE}} -->', offer_date
 
       own_reference = coder.encode(generate_own_reference(data), :named)
-      html.sub! '<!-- {{OWN_REFERENCE}} -->', own_reference  
+      html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
 
       ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.sub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
+      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
 
       building = coder.encode(generate_building(data), :named)
-      html.sub! '<!-- {{BUILDING}} -->', building
+      html.gsub! '<!-- {{BUILDING}} -->', building
 
       contactlines = coder.encode(generate_contactlines(data), :named)
-      html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
+      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
 
       addresslines = coder.encode(generate_addresslines(data), :named)
-      html.sub! '<!-- {{ADDRESSLINES}} -->', addresslines
+      html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
 
-      html.sub! '<!-- {{INTRO}} -->', coder.encode(data['documentIntro'], :named) if data['documentIntro']
+      html.gsub! '<!-- {{INTRO}} -->', coder.encode(data['documentIntro'], :named) if data['documentIntro']
 
       offerlines = coder.encode(generate_offerlines(data), :named)
-      html.sub! '<!-- {{OFFERLINES}} -->', offerlines
+      html.gsub! '<!-- {{OFFERLINES}} -->', offerlines
 
-      html.sub! '<!-- {{CONDITIONS}} -->', coder.encode(data['documentOutro'], :named) if data['documentOutro']
+      html.gsub! '<!-- {{CONDITIONS}} -->', coder.encode(data['documentOutro'], :named) if data['documentOutro']
 
-      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
+      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       write_to_pdf(path, html, '/templates/offerte-footer.html')
     end
@@ -58,14 +58,14 @@ module DocumentGenerator
 
     def generate_offer_date(data)
       if data['offerDate'] then format_date(data['offerDate']) else '' end
-    end    
-    
+    end
+
     def generate_offerlines(data)
       offerlines = data['offerlines'].map do |offerline|
         line = "<div class='offerline'>"
         line += "  <div class='col col-1'>#{offerline['description']}</div>"
         line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
-        line += "  <div class='col col-3'>#{format_vat_rate(offerline['vatRate']['rate'])}%</div>"    
+        line += "  <div class='col col-3'>#{format_vat_rate(offerline['vatRate']['rate'])}%</div>"
         line += "</div>"
         line
       end

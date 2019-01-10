@@ -10,7 +10,7 @@ module DocumentGenerator
     def initialize
       @inline_css = ''
     end
-    
+
     def generate(path, data)
       coder = HTMLEntities.new
 
@@ -18,54 +18,54 @@ module DocumentGenerator
       html = File.open(template_path, 'rb') { |file| file.read }
 
       request_date = generate_request_date(data)
-      html.sub! '<!-- {{DATE}} -->', request_date  
-      
+      html.gsub! '<!-- {{DATE}} -->', request_date
+
       request_number = generate_request_number(data)
-      html.sub! '<!-- {{NUMBER}} -->', request_number
+      html.gsub! '<!-- {{NUMBER}} -->', request_number
 
       way_of_entry = (data['wayOfEntry'] && data['wayOfEntry']['name']) || ''
-      html.sub! '<!-- {{WAY_OF_ENTRY}} -->', way_of_entry
+      html.gsub! '<!-- {{WAY_OF_ENTRY}} -->', way_of_entry
 
       visit = generate_visit(data)
-      html.sub! '<!-- {{VISIT}} -->', visit
-      
+      html.gsub! '<!-- {{VISIT}} -->', visit
+
       visitor = generate_visitor(data)
-      html.sub! '<!-- {{VISITOR}} -->', visitor
-      
+      html.gsub! '<!-- {{VISITOR}} -->', visitor
+
       language = generate_language(data)
-      html.sub! '<!-- {{LANGUAGE}} -->', language
+      html.gsub! '<!-- {{LANGUAGE}} -->', language
 
       customer_name = coder.encode(generate_customer_name(data), :named)
-      html.sub! '<!-- {{CUSTOMER_NAME}} -->', customer_name        
+      html.gsub! '<!-- {{CUSTOMER_NAME}} -->', customer_name
 
       customer_address = coder.encode(generate_customer_address(data), :named)
-      html.sub! '<!-- {{CUSTOMER_ADDRESS}} -->', customer_address
+      html.gsub! '<!-- {{CUSTOMER_ADDRESS}} -->', customer_address
 
       building_address = coder.encode(generate_building_address(data), :named)
-      html.sub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
+      html.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
 
       employee = data['employee'] || ''
-      html.sub! '<!-- {{EMPLOYEE}} -->', employee
-      
+      html.gsub! '<!-- {{EMPLOYEE}} -->', employee
+
       comment = data['comment'] || ''
-      html.sub! '<!-- {{COMMENT}} -->', comment
-      
+      html.gsub! '<!-- {{COMMENT}} -->', comment
+
       customer_email_address = generate_customer_email_address(data)
-      html.sub! '<!-- {{CUSTOMER_EMAIL_ADDRESS}} -->', customer_email_address        
+      html.gsub! '<!-- {{CUSTOMER_EMAIL_ADDRESS}} -->', customer_email_address
 
       contact_email_address = generate_contact_email_address(data)
-      html.sub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address        
+      html.gsub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address
 
       contactlines = coder.encode(generate_contactlines(data), :named)
-      html.sub! '<!-- {{CONTACTLINES}} -->', contactlines
+      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
 
-      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
+      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       write_to_pdf(path, html)
     end
 
     def select_template
-      ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'      
+      ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'
     end
 
     def generate_language(data)
@@ -80,7 +80,7 @@ module DocumentGenerator
 
     def generate_visit(data)
       visit = ''
-      
+
       if data['visit'] and data['visit']['visitDate']
         visit += format_date(data['visit']['visitDate'])
 
@@ -104,7 +104,7 @@ module DocumentGenerator
     def generate_customer_name(data)
       customer = data['customer']
       honorific_prefix = customer['honorificPrefix']
-      
+
       name = ''
       name += honorific_prefix['name'] if honorific_prefix and customer['printInFront']
       name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
@@ -125,7 +125,7 @@ module DocumentGenerator
 
     def generate_building_address(data)
       building = data['building']
-      
+
       if building
         [ building['address1'],
           building['address2'],

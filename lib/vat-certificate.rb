@@ -11,29 +11,29 @@ module DocumentGenerator
     def initialize
       @inline_css = ''
     end
-    
+
     def generate(path, data, language)
       coder = HTMLEntities.new
 
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
-      
+
       customer_name = generate_customer_name(data)
-      html.sub! '<!-- {{CUSTOMER_NAME}} -->', customer_name  
+      html.gsub! '<!-- {{CUSTOMER_NAME}} -->', customer_name
 
       customer_address = coder.encode(generate_customer_address(data), :named)
-      html.sub! '<!-- {{CUSTOMER_ADDRESS}} -->', customer_address
+      html.gsub! '<!-- {{CUSTOMER_ADDRESS}} -->', customer_address
 
       building_address = coder.encode(generate_building_address(data), :named)
-      html.sub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
+      html.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
 
       invoice_number = generate_invoice_number(data)
-      html.sub! '<!-- {{INVOICE_NUMBER}} -->', invoice_number  
-      
+      html.gsub! '<!-- {{INVOICE_NUMBER}} -->', invoice_number
+
       invoice_date = generate_invoice_date(data)
-      html.sub! '<!-- {{INVOICE_DATE}} -->', invoice_date  
-      
-      html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css      
+      html.gsub! '<!-- {{INVOICE_DATE}} -->', invoice_date
+
+      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       write_to_pdf(path, html)
     end
@@ -67,7 +67,7 @@ module DocumentGenerator
 
     def generate_building_address(data)
       building = data['building']
-      
+
       if building
         [ building['address1'],
           building['address2'],
