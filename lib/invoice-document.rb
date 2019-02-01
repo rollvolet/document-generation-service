@@ -111,7 +111,7 @@ module DocumentGenerator
           unit_separator = if unit == 'm' or unit == 'm2' then '' else ' ' end
           unit = 'm<sup>2</sup>' if unit == 'm2'
 
-          line_price = nb * supplement['amount']
+          line_price = supplement['amount']
 
           prices << line_price
           line = "<div class='invoiceline'>"
