@@ -24,10 +24,14 @@ module DocumentGenerator
     end
 
     def hide_element(css_class)
-      @inline_css += ".#{css_class} { display: none }  "
+      display_element(css_class, 'none')
+    end
+
+    def display_element(css_class, display = 'block')
+      @inline_css += ".#{css_class} { display: #{display} }  "
       ''
-    end    
-    
+    end
+
     # Language is determined by the language of the contact (if there is one) or customer.
     # Languafe of the building doesn't matter
     def select_language(data)
@@ -46,11 +50,11 @@ module DocumentGenerator
       else
         ENV['FOOTER_TEMPLATE_NL'] || '/templates/footer-nl.html'
       end
-    end    
+    end
 
     def generate_building(data)
       building = data['building']
-      
+
       if building
         hon_prefix = building['honorificPrefix']
         name = ''
@@ -75,7 +79,7 @@ module DocumentGenerator
     def generate_addresslines(data)
       customer = data['customer']
       hon_prefix = customer['honorificPrefix']
-      
+
       name = ''
       name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and customer['printInFront']
       name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
@@ -116,13 +120,13 @@ module DocumentGenerator
       else
         hide_element('references--ext_reference')
       end
-    end    
+    end
 
     def generate_invoice_number(data)
       number = data['number'].to_s
-      "#{number[0..1]}/#{number[2..-1]}"      
+      "#{number[0..1]}/#{number[2..-1]}"
     end
-    
+
     def generate_request_number(data)
       data['id'].to_s
     end
@@ -130,11 +134,11 @@ module DocumentGenerator
     def generate_invoice_date(data)
       if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
     end
-        
+
     def generate_request_date(data)
       if data['requestDate'] then format_date(data['requestDate']) else '' end
     end
-        
+
     def format_decimal(number)
       if number then sprintf("%0.2f", number).gsub(/(\d)(?=\d{3}+\.)/, '\1 ').gsub(/\./, ',') else '' end
     end

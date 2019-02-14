@@ -119,6 +119,9 @@ module DocumentGenerator
       total_vat = total_net_price * vat_rate / 100
       total_gross_deposit_invoice = data['totalAmount']
       total_net_deposit_invoice = data['baseAmount']
+      is_taxfree = data['vatRate']['code'] == 'm'
+
+      display_element('invoiceline .taxfree', 'inline') if is_taxfree
 
       {
         invoicelines: invoicelines.join,

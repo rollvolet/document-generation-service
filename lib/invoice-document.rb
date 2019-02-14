@@ -139,9 +139,11 @@ module DocumentGenerator
       total_deposits = deposits.inject(:+) || 0
       total_deposit_invoices = deposit_invoices.inject(:+) || 0
       total_gross_price = total_net_price + total_vat - total_deposits - total_deposit_invoices
+      is_taxfree = data['vatRate']['code'] == 'm'
 
       hide_element('priceline-deposit') if (total_deposits == 0)
       hide_element('priceline-deposit-invoice') if (total_deposit_invoices == 0)
+      display_element('invoiceline .taxfree', 'inline') if is_taxfree
 
       {
         invoicelines: invoicelines.join,

@@ -38,7 +38,7 @@ module DocumentGenerator
 
       html.gsub! '<!-- {{INTRO}} -->', coder.encode(data['documentIntro'], :named) if data['documentIntro']
 
-      offerlines = coder.encode(generate_offerlines(data), :named)
+      offerlines = coder.encode(generate_offerlines(data, language), :named)
       html.gsub! '<!-- {{OFFERLINES}} -->', offerlines
 
       html.gsub! '<!-- {{CONDITIONS}} -->', coder.encode(data['documentOutro'], :named) if data['documentOutro']
@@ -61,12 +61,17 @@ module DocumentGenerator
       if data['offerDate'] then format_date(data['offerDate']) else '' end
     end
 
-    def generate_offerlines(data)
+    def generate_offerlines(data, language)
       offerlines = data['offerlines'].map do |offerline|
         line = "<div class='offerline'>"
         line += "  <div class='col col-1'>#{offerline['description']}</div>"
         line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
-        line += "  <div class='col col-3'>#{format_vat_rate(offerline['vatRate']['rate'])}%</div>"
+
+        vatNoteCssClass = ''
+        if offerline['vatRate']['code'] == 'm'
+          vatNoteCssClass = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
+        end
+        line += "  <div class='col col-3 #{vatNoteCssClass}'>#{format_vat_rate(offerline['vatRate']['rate'])}%</div>"
         line += "</div>"
         line
       end
