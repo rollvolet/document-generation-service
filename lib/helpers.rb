@@ -40,6 +40,14 @@ module DocumentGenerator
       language
     end
 
+    def select_footer(data, language)
+      if language == 'FRA'
+        ENV['FOOTER_TEMPLATE_FR'] || '/templates/footer-fr.html'
+      else
+        ENV['FOOTER_TEMPLATE_NL'] || '/templates/footer-nl.html'
+      end
+    end    
+
     def generate_building(data)
       building = data['building']
       

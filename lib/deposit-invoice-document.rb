@@ -63,7 +63,8 @@ module DocumentGenerator
 
       html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
-      write_to_pdf(path, html, '/templates/offerte-footer.html')
+      footer_path = select_footer(data, language)
+      write_to_pdf(path, html, footer_path)
     end
 
     def select_template(data, language)
