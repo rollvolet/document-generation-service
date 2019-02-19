@@ -94,7 +94,7 @@ module DocumentGenerator
     end
 
     def generate_visitor(data)
-      if data['visitor'] != '(geen)'
+      if data['visitor'] and data['visitor'] != '(geen)'
         data['visitor']
       else
         ''
