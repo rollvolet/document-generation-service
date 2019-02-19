@@ -12,9 +12,18 @@ services:
 ```
 
 ## Configuration
-The following environment variables can be configured:
+The following environment variables can be set to configure the absolute path to the template:
 * `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch (default: `/templates/offerte-nl.html`)
 * `OFFER_TEMPLATE_FR`: absolute path of the offer template in French (default: `/templates/offerte-fr.html`)
+* `DEPOSIT_INVOICE_TEMPLATE_NL`: absolute path of the deposit invoice template in Dutch (default: `/templates/voorschotfactuur-nl.html`)
+* `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
+* `INVOICE_TEMPLATE_NL`: absolute path of the invoice template in Dutch (default: `/templates/factuur-nl.html`)
+* `INVOICE_TEMPLATE_FR`: absolute path of the invoice template in French (default: `/templates/factuur-fr.html`)
+* `CERTIFICATE_TEMPLATE_NL`: absolute path of the VAT certificate template in Dutch (default: `/templates/attest-nl.html`)
+* `CERTIFICATE_TEMPLATE_FR`: absolute path of the VAT certificate template in French (default: `/templates/attest-fr.html`)
+* `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
+* `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)
+* `FOOTER_TEMPLATE_FR`: absolute path of the footer template in French (default: `/templates/footer-fr.html`)
 
 ## API
 ### POST /documents/visit-report
@@ -22,3 +31,13 @@ Generates a visit report (PDF file) for a given customer request. The request bo
 
 ### POST /documents/offer
 Generates an offer (PDF file) for a given offer with a set of offerlines. The request body must contain the visitor initials and an offer. The offer must include the related offerlines with VAT rate, customer, contact, building, request and customer/contact telephones.
+
+### POST /documents/invoice
+Generates an invoice (PDF file) for a given invoice with a set of ordered offerlines.
+
+### POST /documents/deposit-invoice
+Generates a deposit invoice (PDF file) for a given deposit invoice with a set of ordered offerlines.
+
+### POST /documents/certificate
+Generates a VAT certificate (PDF file) for a given invoice.
+
