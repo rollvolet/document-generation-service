@@ -1,5 +1,5 @@
 # document-generation-service
-Document generation service for Rollvolet CRM
+Document generation service for Rollvolet CRM. Documents are generated based on HTML templates in which placeholders will be replaced with actual content.
 
 ## Installation
 To add the service to your stack, add the following snippet to `docker-compose.yml`:
@@ -12,6 +12,7 @@ services:
 ```
 
 ## Configuration
+### Templates
 The following environment variables can be set to configure the absolute path to the template:
 * `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch (default: `/templates/offerte-nl.html`)
 * `OFFER_TEMPLATE_FR`: absolute path of the offer template in French (default: `/templates/offerte-fr.html`)
@@ -25,7 +26,17 @@ The following environment variables can be set to configure the absolute path to
 * `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)
 * `FOOTER_TEMPLATE_FR`: absolute path of the footer template in French (default: `/templates/footer-fr.html`)
 
+The footer template is included in the following templates:
+* offer
+* deposit invoice
+* invoice
+
+### Volumes
+All generated files (final output as well as intermediary files) are stored in `/tmp`.
+
 ## API
+All endpoints receive a JSON body containing the data required to fill in the variables in the templates. The service doesn't query a database itself. The response of each request is a file.
+
 ### POST /documents/visit-report
 Generates a visit report (PDF file) for a given customer request. The request body must contain a customer request, including the related customer, contact, building, way-of-entry, language and visit.
 
