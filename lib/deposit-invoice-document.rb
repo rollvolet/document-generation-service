@@ -49,7 +49,7 @@ module DocumentGenerator
       html.gsub! '<!-- {{REQUEST_NUMBER}} -->', request_number
 
       pricing = generate_pricing(data)
-      html.gsub! '<!-- {{INVOICELINES}} -->', pricing[:invoicelines]
+      html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
       html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_net_deposit_invoice])
