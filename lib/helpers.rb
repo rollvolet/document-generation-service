@@ -98,13 +98,16 @@ module DocumentGenerator
     end
 
     def generate_contactlines(data)
+      vat_number = data['customer']['vatNumber']
+      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
+
       contact = data['contact']
       name = "Contact: #{contact['prefix']} #{contact['name']} #{contact['suffix']}".chomp if contact
 
       telephones = if contact then contact['telephones'] else data['customer']['telephones'] end
       top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
 
-      contactlines = if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
+      contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
       contactlines += "<div class='contactline contactline--telephones'>"
       top_telephones.each do |tel|
         formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
@@ -141,6 +144,23 @@ module DocumentGenerator
 
     def format_decimal(number)
       if number then sprintf("%0.2f", number).gsub(/(\d)(?=\d{3}+\.)/, '\1 ').gsub(/\./, ',') else '' end
+    end
+
+    def format_vat_number(vat_number)
+      if vat_number and vat_number.length >= 2
+        country = vat_number[0..1]
+        number = vat_number[2..-1]
+        if country.upcase == "BE"
+          if number.length == 9
+            return "#{country} #{number[0,3]}.#{number[3,3]}.#{number[6..-1]}"
+          elsif number.length > 9
+            return "#{country} #{number[0,4]}.#{number[4,3]}.#{number[7..-1]}"
+          end
+          return "#{country} #{number}"
+        end
+      else
+        return vat_number
+      end
     end
 
     def format_vat_rate(rate)
