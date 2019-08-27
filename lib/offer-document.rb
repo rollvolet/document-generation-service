@@ -67,11 +67,13 @@ module DocumentGenerator
         line += "  <div class='col col-1'>#{offerline['description']}</div>"
         line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
 
-        vatNoteCssClass = ''
+        vat_note_css_class = ''
+        vat_rate = "#{format_vat_rate(offerline['vatRate']['rate'])}%"
         if offerline['vatRate']['code'] == 'm'
-          vatNoteCssClass = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
+          vat_rate = ''
+          vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end
-        line += "  <div class='col col-3 #{vatNoteCssClass}'>#{format_vat_rate(offerline['vatRate']['rate'])}%</div>"
+        line += "  <div class='col col-3 #{vat_note_css_class}'>#{vat_rate}</div>"
         line += "</div>"
         line
       end
