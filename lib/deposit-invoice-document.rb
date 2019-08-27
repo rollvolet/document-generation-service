@@ -52,9 +52,9 @@ module DocumentGenerator
       html.gsub! '<!-- {{INVOICELINES}} -->', pricing[:invoicelines]
       html.gsub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
-      html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
-      html.gsub! '<!-- {{TOTAL_GROSS_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_gross_deposit_invoice])
       html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_net_deposit_invoice])
+      html.gsub! '<!-- {{TOTAL_VAT_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_vat_deposit_invoice])
+      html.gsub! '<!-- {{TOTAL_GROSS_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_gross_deposit_invoice])
 
       payment_due_date = generate_payment_due_date(data)
       html.sub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
@@ -103,12 +103,10 @@ module DocumentGenerator
       prices = []
 
       if data['order']
-        # TODO we assume all ordered offerlines have the same VAT rate as the invoice
         data['order']['offer']['offerlines'].find_all { |l| l['isOrdered'] }.each do |offerline|
           prices << offerline['amount']
           line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1'>#{offerline['description']}</div>"
-          line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
+          line += "  <div class='col col-1-2'>#{offerline['description']}</div>"
           line += "</div>"
           invoicelines << line
         end
@@ -116,20 +114,23 @@ module DocumentGenerator
 
       total_net_price = prices.inject(:+) || 0
       vat_rate = data['vatRate']['rate']
-      total_vat = total_net_price * vat_rate / 100
       total_gross_deposit_invoice = data['totalAmount']
       total_net_deposit_invoice = data['baseAmount']
+      total_vat_deposit_invoice = total_net_deposit_invoice * vat_rate / 100
       is_taxfree = data['vatRate']['code'] == 'm'
 
-      display_element('invoiceline .taxfree', 'inline') if is_taxfree
+      if is_taxfree
+        display_element('invoiceline .col.taxfree', 'inline-block')
+        hide_element('invoiceline .col.not-taxfree')
+      end
 
       {
         invoicelines: invoicelines.join,
         total_net_price: total_net_price,
         vat_rate: vat_rate,
-        total_vat: total_vat,
-        total_gross_deposit_invoice: total_gross_deposit_invoice,
-        total_net_deposit_invoice: total_net_deposit_invoice
+        total_net_deposit_invoice: total_net_deposit_invoice,
+        total_vat_deposit_invoice: total_vat_deposit_invoice,
+        total_gross_deposit_invoice: total_gross_deposit_invoice
       }
     end
 
