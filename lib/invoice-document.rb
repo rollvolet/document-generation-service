@@ -48,11 +48,12 @@ module DocumentGenerator
       pricing = generate_pricing(data)
       html.gsub! '<!-- {{INVOICELINES}} -->', pricing[:invoicelines]
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
-      html.gsub! '<!-- {{TOTAL_NET_PRICE}} -->', format_decimal(pricing[:total_net_price])
-      html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
-      html.gsub! '<!-- {{TOTAL_GROSS_PRICE}} -->', format_decimal(pricing[:total_gross_price])
+      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
+      html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices])
+      html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers]
       html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits])
-      html.gsub! '<!-- {{TOTAL_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_deposit_invoices])
+      html.gsub! '<!-- {{NET_SUBTOTAL}} -->', format_decimal(pricing[:net_subtotal])
+      html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
       html.gsub! '<!-- {{TOTAL_TO_PAY}} -->', format_decimal(pricing[:total_to_pay])
 
       payment_due_date = generate_payment_due_date(data)
@@ -130,31 +131,39 @@ module DocumentGenerator
       end
 
       deposit_invoices = []
+      deposit_invoice_numbers = []
       if data['depositInvoices']
-        deposit_invoices = data['depositInvoices'].map { |d| d['totalAmount'] || 0}
+        deposit_invoices = data['depositInvoices'].map { |d| d['amount'] || 0}
+        deposit_invoice_numbers = data['depositInvoices'].map { |d| generate_invoice_number(d) }.join(', ')
       end
 
+      # TODO we assume invoice and deposit-invoices have the same VAT rate
       vat_rate = data['vatRate']['rate']
-      total_net_price = prices.inject(:+) || 0  # sum of ordered offerlines and supplements
-      total_vat = total_net_price * vat_rate / 100
-      total_gross_price = total_net_price + total_vat
+      total_net_order_price = prices.inject(:+) || 0  # sum of ordered offerlines and supplements
+      total_net_deposit_invoices = deposit_invoices.inject(:+) || 0
       total_deposits = deposits.inject(:+) || 0
-      total_deposit_invoices = deposit_invoices.inject(:+) || 0
-      total_to_pay = total_gross_price - total_deposits - total_deposit_invoices
+      net_subtotal = total_net_order_price - total_net_deposit_invoices - total_deposits
+      total_vat = (total_net_order_price - total_net_deposit_invoices) * vat_rate / 100
+      total_to_pay = net_subtotal + total_vat
       is_taxfree = data['vatRate']['code'] == 'm'
 
-      hide_element('priceline-deposit') if (total_deposits == 0)
-      hide_element('priceline-deposit-invoice') if (total_deposit_invoices == 0)
-      display_element('invoiceline .taxfree', 'inline') if is_taxfree
+      hide_element('priceline-deposit') if total_deposits == 0
+      hide_element('priceline-deposit-invoice') if total_net_deposit_invoices == 0
+
+      if is_taxfree
+        display_element('invoiceline .col.taxfree', 'inline-block')
+        hide_element('invoiceline .col.not-taxfree')
+      end
 
       {
         invoicelines: invoicelines.join,
         vat_rate: vat_rate,
-        total_net_price: total_net_price,
-        total_vat: total_vat,
-        total_gross_price: total_gross_price,
+        total_net_order_price: total_net_order_price,
+        total_net_deposit_invoices: total_net_deposit_invoices,
+        deposit_invoice_numbers: deposit_invoice_numbers,
         total_deposits: total_deposits,
-        total_deposit_invoices: total_deposit_invoices,
+        net_subtotal: net_subtotal,
+        total_vat: total_vat,
         total_to_pay: total_to_pay
       }
     end
