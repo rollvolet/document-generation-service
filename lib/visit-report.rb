@@ -29,7 +29,7 @@ module DocumentGenerator
       visit = generate_visit(data)
       html.gsub! '<!-- {{VISIT}} -->', visit
 
-      visitor = generate_visitor(data)
+      visitor = coder.encode(generate_visitor(data), :named)
       html.gsub! '<!-- {{VISITOR}} -->', visitor
 
       language = generate_language(data)
@@ -44,10 +44,10 @@ module DocumentGenerator
       building_address = coder.encode(generate_building_address(data), :named)
       html.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
 
-      employee = data['employee'] || ''
+      employee = coder.encode(generate_employee_name(data), :named)
       html.gsub! '<!-- {{EMPLOYEE}} -->', employee
 
-      comment = data['comment'] || ''
+      comment = coder.encode(data['comment'] || '', :named)
       html.gsub! '<!-- {{COMMENT}} -->', comment
 
       customer_email_address = generate_customer_email_address(data)
@@ -153,6 +153,15 @@ module DocumentGenerator
       end
 
       if emails.length > 0 then emails.join(', ') else hide_element('email--contact') end
+    end
+
+    def generate_employee_name(data)
+      if data['employee']
+        data['employee']
+      else
+        hide_element('employee--name')
+        ''
+      end
     end
 
   end
