@@ -51,9 +51,10 @@ module DocumentGenerator
       html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
       html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices])
       html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers]
-      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits])
-      html.gsub! '<!-- {{NET_SUBTOTAL}} -->', format_decimal(pricing[:net_subtotal])
+      html.gsub! '<!-- {{TOTAL_NET}} -->', format_decimal(pricing[:total_net])
       html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
+      html.gsub! '<!-- {{TOTAL_GROSS}} -->', format_decimal(pricing[:total_gross])
+      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits])
       html.gsub! '<!-- {{TOTAL_TO_PAY}} -->', format_decimal(pricing[:total_to_pay])
 
       payment_due_date = generate_payment_due_date(data)
@@ -141,10 +142,11 @@ module DocumentGenerator
       vat_rate = data['vatRate']['rate']
       total_net_order_price = prices.inject(:+) || 0  # sum of ordered offerlines and supplements
       total_net_deposit_invoices = deposit_invoices.inject(:+) || 0
+      total_net = total_net_order_price - total_net_deposit_invoices
+      total_vat = total_net * vat_rate / 100
+      total_gross = total_net + total_vat
       total_deposits = deposits.inject(:+) || 0
-      net_subtotal = total_net_order_price - total_net_deposit_invoices - total_deposits
-      total_vat = (total_net_order_price - total_net_deposit_invoices) * vat_rate / 100
-      total_to_pay = net_subtotal + total_vat
+      total_to_pay = total_gross - total_deposits
       is_taxfree = data['vatRate']['code'] == 'm'
 
       hide_element('priceline-deposit') if total_deposits == 0
@@ -161,9 +163,10 @@ module DocumentGenerator
         total_net_order_price: total_net_order_price,
         total_net_deposit_invoices: total_net_deposit_invoices,
         deposit_invoice_numbers: deposit_invoice_numbers,
-        total_deposits: total_deposits,
-        net_subtotal: net_subtotal,
+        total_net: total_net,
         total_vat: total_vat,
+        total_gross: total_gross,
+        total_deposits: total_deposits,
         total_to_pay: total_to_pay
       }
     end
