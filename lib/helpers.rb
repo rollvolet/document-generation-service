@@ -102,7 +102,15 @@ module DocumentGenerator
       contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
 
       contact = data['contact']
-      name = "Contact: #{contact['prefix']} #{contact['name']} #{contact['suffix']}".chomp if contact
+      if contact
+        hon_prefix = contact['honorificPrefix']
+        name = 'Contact: '
+        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
+        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
+        name += " #{contact['name']}" if contact['name']
+        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
+        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
+      end
 
       telephones = if contact then contact['telephones'] else data['customer']['telephones'] end
       top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
