@@ -81,11 +81,11 @@ module DocumentGenerator
     def generate_visit(data)
       visit = ''
 
-      if data['visit'] and data['visit']['visitDate']
-        visit += format_date(data['visit']['visitDate'])
+      if data['calendarEvent'] and data['calendarEvent']['visitDate']
+        visit += format_date(data['calendarEvent']['visitDate'])
 
-        if data['visit']['calendarSubject']
-          period = data['visit']['calendarSubject'].split(data['customer']['name']).first.chop
+        if data['calendarEvent']['calendarSubject']
+          period = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.chop
           visit += "; #{period}"
         end
       end
