@@ -64,8 +64,22 @@ module DocumentGenerator
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
+      header_path = select_header(data, language)
+      header_html = if header_path then File.open(header_path, 'rb') { |file| file.read } else '' end
+      header_html.gsub! '<!-- {{NUMBER}} -->', invoice_number
+
       footer_path = select_footer(data, language)
-      write_to_pdf(path, html, footer_path)
+      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
+
+      write_to_pdf(path, html, header_html, footer_html)
+    end
+
+    def select_header(data, language)
+      if language == 'FRA'
+        ENV['INVOICE_HEADER_TEMPLATE_FR'] || '/templates/factuur-header-fr.html'
+      else
+        ENV['INVOICE_HEADER_TEMPLATE_NL'] || '/templates/factuur-header-nl.html'
+      end
     end
 
     def select_template(data, language)

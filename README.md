@@ -16,17 +16,23 @@ services:
 The following environment variables can be set to configure the absolute path to the template:
 * `OFFER_TEMPLATE_NL`: absolute path of the offer template in Dutch (default: `/templates/offerte-nl.html`)
 * `OFFER_TEMPLATE_FR`: absolute path of the offer template in French (default: `/templates/offerte-fr.html`)
+* `OFFER_HEADER_TEMPLATE_NL`: absolute path of the offer header template in Dutch (default: `/templates/offerte-header-nl.html`)
+* `OFFER_HEADER_TEMPLATE_FR`: absolute path of the offer header template in French (default: `/templates/offerte-header-fr.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_NL`: absolute path of the deposit invoice template in Dutch (default: `/templates/voorschotfactuur-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
+* `DEPOSIT_INVOICE_HEADER_TEMPLATE_NL`: absolute path of the deposit invoice header template in Dutch (default: `/templates/voorschotfactuur-header-nl.html`)
+* `DEPOSIT_INVOICE_HEADER_TEMPLATE_FR`: absolute path of the deposit invoice header template in French (default: `/templates/voorschotfactuur-header-fr.html`)
 * `INVOICE_TEMPLATE_NL`: absolute path of the invoice template in Dutch (default: `/templates/factuur-nl.html`)
 * `INVOICE_TEMPLATE_FR`: absolute path of the invoice template in French (default: `/templates/factuur-fr.html`)
+* `INVOICE_HEADER_TEMPLATE_NL`: absolute path of the invoice header template in Dutch (default: `/templates/factuur-header-nl.html`)
+* `INVOICE_HEADER_TEMPLATE_FR`: absolute path of the invoice header template in French (default: `/templates/factuur-header-fr.html`)
 * `CERTIFICATE_TEMPLATE_NL`: absolute path of the VAT certificate template in Dutch (default: `/templates/attest-nl.html`)
 * `CERTIFICATE_TEMPLATE_FR`: absolute path of the VAT certificate template in French (default: `/templates/attest-fr.html`)
 * `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
 * `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)
 * `FOOTER_TEMPLATE_FR`: absolute path of the footer template in French (default: `/templates/footer-fr.html`)
 
-The footer template is included in the following templates:
+The header and footer templates are included in the following documents:
 * offer
 * deposit invoice
 * invoice

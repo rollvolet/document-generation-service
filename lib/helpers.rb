@@ -1,8 +1,6 @@
 module DocumentGenerator
   module Helpers
-    def write_to_pdf(path, html, footer_path = nil)
-      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
-
+    def write_to_pdf(path, html, header_html = '', footer_html = '')
       pdf = WickedPdf.new.pdf_from_string(html, {
                                             margin: {
                                               left: 0,
@@ -14,6 +12,7 @@ module DocumentGenerator
                                             print_media_type: true,
                                             page_size: 'A4',
                                             orientation: 'Portrait',
+                                            header: { content: header_html },
                                             footer: { content: footer_html }
                                           })
 

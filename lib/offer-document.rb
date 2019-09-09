@@ -45,8 +45,22 @@ module DocumentGenerator
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
+      header_path = select_header(data, language)
+      header_html = if header_path then File.open(header_path, 'rb') { |file| file.read } else '' end
+      header_html.gsub! '<!-- {{HEADER_REFERENCE}} -->', generate_header_reference(data)
+
       footer_path = select_footer(data, language)
-      write_to_pdf(path, html, footer_path)
+      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
+
+      write_to_pdf(path, html, header_html, footer_html)
+    end
+
+    def select_header(data, language)
+      if language == 'FRA'
+        ENV['OFFER_HEADER_TEMPLATE_FR'] || '/templates/offerte-header-fr.html'
+      else
+        ENV['OFFER_HEADER_TEMPLATE_NL'] || '/templates/offerte-header-nl.html'
+      end
     end
 
     def select_template(data, language)
@@ -92,5 +106,16 @@ module DocumentGenerator
       end
     end
 
+    def generate_header_reference(data)
+      request = data['request']
+      if request
+        reference = "AD #{request['id']}"
+        visit = request['visit']
+        reference += " #{visit['visitor']}" if visit and visit['visitor']
+        reference
+      else
+        ''
+      end
+    end
   end
 end
