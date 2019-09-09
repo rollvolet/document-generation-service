@@ -126,12 +126,22 @@ module DocumentGenerator
     def generate_building_address(data)
       building = data['building']
 
+      honorific_prefix = building['honorificPrefix']
+
+      name = ''
+      name += honorific_prefix['name'] if honorific_prefix and building['printInFront']
+      name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
+      name += " #{building['name']}" if building['name']
+      name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
+      name += " #{honorific_prefix['name']}" if honorific_prefix and not building['printInFront']
+
       if building
-        [ building['address1'],
+        [ name,
+          building['address1'],
           building['address2'],
           building['address3'],
           "#{building['postalCode']} #{building['city']}"
-        ].find_all { |a| a }.join('<br>')
+        ].find_all { |a| a and a != "" }.join('<br>')
       else
         hide_element('table .col .building-address')
       end
