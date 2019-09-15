@@ -45,6 +45,9 @@ module DocumentGenerator
       contactlines = coder.encode(generate_contactlines(data), :named)
       html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
 
+      outro = coder.encode(data['documentOutro'] || '', :named)
+      html.gsub! '<!-- {{OUTRO}} -->', outro
+
       pricing = generate_pricing(data)
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
