@@ -126,16 +126,16 @@ module DocumentGenerator
     def generate_building_address(data)
       building = data['building']
 
-      honorific_prefix = building['honorificPrefix']
-
-      name = ''
-      name += honorific_prefix['name'] if honorific_prefix and building['printInFront']
-      name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
-      name += " #{building['name']}" if building['name']
-      name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
-      name += " #{honorific_prefix['name']}" if honorific_prefix and not building['printInFront']
-
       if building
+        honorific_prefix = building['honorificPrefix']
+
+        name = ''
+        name += honorific_prefix['name'] if honorific_prefix and building['printInFront']
+        name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
+        name += " #{building['name']}" if building['name']
+        name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
+        name += " #{honorific_prefix['name']}" if honorific_prefix and not building['printInFront']
+
         [ name,
           building['address1'],
           building['address2'],
