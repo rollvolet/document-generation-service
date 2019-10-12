@@ -48,7 +48,7 @@ module DocumentGenerator
       outro = coder.encode(data['documentOutro'] || '', :named)
       html.gsub! '<!-- {{OUTRO}} -->', outro
 
-      pricing = generate_pricing(data)
+      pricing = generate_pricing(data, language)
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
       html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
@@ -107,7 +107,7 @@ module DocumentGenerator
       end
     end
 
-    def generate_pricing(data)
+    def generate_pricing(data, language)
       invoicelines = []
       prices = []
 
@@ -128,9 +128,13 @@ module DocumentGenerator
           nb = supplement['nbOfPieces'] || 1.0
           nb_display = if nb % 1 == 0 then nb.floor else format_decimal(nb) end
 
-          unit = supplement['unit'] || ''
-          unit_separator = if unit == 'm' or unit == 'm2' then '' else ' ' end
-          unit = 'm<sup>2</sup>' if unit == 'm2'
+          unit = ''
+          if (supplement['unit'])
+            unit_code = supplement['unit']['code']
+            unit_separator = if unit == 'M' or unit == 'M2' then '' else ' ' end
+            unit = if language == 'FRA' then supplement['unit']['nameFra'] else supplement['unit']['nameNed'] end
+            unit = 'm<sup>2</sup>' if unit_code == 'M2'
+          end
 
           line_price = supplement['amount']
 
