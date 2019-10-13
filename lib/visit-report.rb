@@ -27,7 +27,9 @@ module DocumentGenerator
       html.gsub! '<!-- {{WAY_OF_ENTRY}} -->', way_of_entry
 
       visit = generate_visit(data)
-      html.gsub! '<!-- {{VISIT}} -->', visit
+      puts visit
+      html.gsub! '<!-- {{VISIT_DATE}} -->', visit[0]
+      html.gsub! '<!-- {{VISIT_TIME}} -->', visit[1]
 
       visitor = coder.encode(generate_visitor(data), :named)
       html.gsub! '<!-- {{VISITOR}} -->', visitor
@@ -79,18 +81,18 @@ module DocumentGenerator
     end
 
     def generate_visit(data)
-      visit = ''
+      visit_date = ''
+      visit_time = ''
 
       if data['calendarEvent'] and data['calendarEvent']['visitDate']
-        visit += format_date(data['calendarEvent']['visitDate'])
+        visit_date = format_date(data['calendarEvent']['visitDate'])
 
         if data['calendarEvent']['calendarSubject']
-          period = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.chop
-          visit += "; #{period}"
+          visit_time = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.chop
         end
       end
 
-      visit
+      [visit_date, visit_time]
     end
 
     def generate_visitor(data)
