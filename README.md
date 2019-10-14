@@ -26,6 +26,10 @@ The following environment variables can be set to configure the absolute path to
 * `INVOICE_TEMPLATE_FR`: absolute path of the invoice template in French (default: `/templates/factuur-fr.html`)
 * `INVOICE_HEADER_TEMPLATE_NL`: absolute path of the invoice header template in Dutch (default: `/templates/factuur-header-nl.html`)
 * `INVOICE_HEADER_TEMPLATE_FR`: absolute path of the invoice header template in French (default: `/templates/factuur-header-fr.html`)
+* `CREDIT_NOTE_TEMPLATE_NL`: absolute path of the credit note template in Dutch (default: `/templates/creditnota-nl.html`)
+* `CREDIT_NOTE_TEMPLATE_FR`: absolute path of the credit note template in French (default: `/templates/creditnota-fr.html`)
+* `CREDIT_NOTE_HEADER_TEMPLATE_NL`: absolute path of the credit note header template in Dutch (default: `/templates/creditnota-header-nl.html`)
+* `CREDIT_NOTE_HEADER_TEMPLATE_FR`: absolute path of the credit note header template in French (default: `/templates/creditnota-header-fr.html`)
 * `CERTIFICATE_TEMPLATE_NL`: absolute path of the VAT certificate template in Dutch (default: `/templates/attest-nl.html`)
 * `CERTIFICATE_TEMPLATE_FR`: absolute path of the VAT certificate template in French (default: `/templates/attest-fr.html`)
 * `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
@@ -50,7 +54,7 @@ Generates a visit report (PDF file) for a given customer request. The request bo
 Generates an offer (PDF file) for a given offer with a set of offerlines. The request body must contain the visitor initials and an offer. The offer must include the related offerlines with VAT rate, customer, contact, building, request and customer/contact telephones.
 
 ### POST /documents/invoice
-Generates an invoice (PDF file) for a given invoice with a set of ordered offerlines.
+Generates an invoice or credit note (PDF file) for a given invoice with a set of ordered offerlines.
 
 ### POST /documents/deposit-invoice
 Generates a deposit invoice (PDF file) for a given deposit invoice with a set of ordered offerlines.

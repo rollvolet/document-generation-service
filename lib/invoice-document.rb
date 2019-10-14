@@ -15,6 +15,8 @@ module DocumentGenerator
     def generate(path, data, language)
       coder = HTMLEntities.new
 
+      isCreditNote =  data['isCreditNote']
+
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
 
@@ -51,19 +53,21 @@ module DocumentGenerator
       pricing = generate_pricing(data, language)
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
-      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
-      html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices])
-      html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers]
+      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price]) unless isCreditNote
+      html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices]) unless isCreditNote
+      html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers] unless isCreditNote
       html.gsub! '<!-- {{TOTAL_NET}} -->', format_decimal(pricing[:total_net])
       html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
       html.gsub! '<!-- {{TOTAL_GROSS}} -->', format_decimal(pricing[:total_gross])
-      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits])
+      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits]) unless isCreditNote
       html.gsub! '<!-- {{TOTAL_TO_PAY}} -->', format_decimal(pricing[:total_to_pay])
 
-      payment_due_date = generate_payment_due_date(data)
-      html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
+      unless isCreditNote
+        payment_due_date = generate_payment_due_date(data)
+        html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
 
-      generate_certificate_notification(data)
+        generate_certificate_notification(data)
+      end
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
@@ -78,18 +82,34 @@ module DocumentGenerator
     end
 
     def select_header(data, language)
-      if language == 'FRA'
-        ENV['INVOICE_HEADER_TEMPLATE_FR'] || '/templates/factuur-header-fr.html'
+      if data['isCreditNote']
+        if language == 'FRA'
+          ENV['CREDIT_NOTE_HEADER_TEMPLATE_FR'] || '/templates/creditnota-header-fr.html'
+        else
+          ENV['CREDIT_NOTE_HEADER_TEMPLATE_NL'] || '/templates/creditnota-header-nl.html'
+        end
       else
-        ENV['INVOICE_HEADER_TEMPLATE_NL'] || '/templates/factuur-header-nl.html'
+        if language == 'FRA'
+          ENV['INVOICE_HEADER_TEMPLATE_FR'] || '/templates/factuur-header-fr.html'
+        else
+          ENV['INVOICE_HEADER_TEMPLATE_NL'] || '/templates/factuur-header-nl.html'
+        end
       end
     end
 
     def select_template(data, language)
-      if language == 'FRA'
-        ENV['INVOICE_TEMPLATE_FR'] || '/templates/factuur-fr.html'
+      if data['isCreditNote']
+        if language == 'FRA'
+          ENV['CREDIT_NOTE_TEMPLATE_FR'] || '/templates/creditnota-fr.html'
+        else
+          ENV['CREDIT_NOTE_TEMPLATE_NL'] || '/templates/creditnota-nl.html'
+        end
       else
-        ENV['INVOICE_TEMPLATE_NL'] || '/templates/factuur-nl.html'
+        if language == 'FRA'
+          ENV['INVOICE_TEMPLATE_FR'] || '/templates/factuur-fr.html'
+        else
+          ENV['INVOICE_TEMPLATE_NL'] || '/templates/factuur-nl.html'
+        end
       end
     end
 
@@ -136,7 +156,7 @@ module DocumentGenerator
             unit = 'm<sup>2</sup>' if unit_code == 'M2'
           end
 
-          line_price = supplement['amount']
+          line_price = supplement['amount'] || 0
 
           prices << line_price
           line = "<div class='invoiceline'>"
