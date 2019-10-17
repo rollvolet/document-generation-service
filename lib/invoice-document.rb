@@ -189,6 +189,7 @@ module DocumentGenerator
       total_deposits = deposits.inject(:+) || 0
       total_to_pay = total_gross - total_deposits
       is_taxfree = data['vatRate']['code'] == 'm'
+      is_six_pct_vat = data['vatRate']['code'] == '6'
 
       hide_element('priceline-deposit') if total_deposits == 0
       hide_element('priceline-deposit-invoice') if total_net_deposit_invoices == 0
@@ -197,6 +198,8 @@ module DocumentGenerator
         display_element('invoiceline .col.taxfree', 'inline-block')
         hide_element('invoiceline .col.not-taxfree')
       end
+
+      hide_element('vat-6-pct') unless is_six_pct_vat
 
       {
         invoicelines: invoicelines.join,
