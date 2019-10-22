@@ -153,6 +153,7 @@ module DocumentGenerator
             unit_code = supplement['unit']['code']
             unit_separator = if unit == 'M' or unit == 'M2' then '' else ' ' end
             unit = if language == 'FRA' then supplement['unit']['nameFra'] else supplement['unit']['nameNed'] end
+            unit = coder.encode(unit, :named)
             unit = 'm<sup>2</sup>' if unit_code == 'M2'
           end
 
