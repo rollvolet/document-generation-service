@@ -50,7 +50,7 @@ module DocumentGenerator
       outro = coder.encode(data['documentOutro'] || '', :named)
       html.gsub! '<!-- {{OUTRO}} -->', outro
 
-      pricing = generate_pricing(data, language)
+      pricing = generate_pricing(data, language, coder)
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
       html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price]) unless isCreditNote
@@ -127,7 +127,7 @@ module DocumentGenerator
       end
     end
 
-    def generate_pricing(data, language)
+    def generate_pricing(data, language, coder)
       invoicelines = []
       prices = []
 
