@@ -11,7 +11,7 @@ module DocumentGenerator
       @inline_css = ''
     end
 
-    def generate(path, data)
+    def generate(path, data, history)
       coder = HTMLEntities.new
 
       template_path = select_template
@@ -48,6 +48,9 @@ module DocumentGenerator
 
       employee = coder.encode(generate_employee_name(data), :named)
       html.gsub! '<!-- {{EMPLOYEE}} -->', employee
+
+      history = coder.encode(generate_order_history(history), :named)
+      html.gsub! '<!-- {{ORDER_HISTORY}} -->', history
 
       comment = coder.encode(data['comment'] || '', :named)
       html.gsub! '<!-- {{COMMENT}} -->', comment
@@ -174,6 +177,14 @@ module DocumentGenerator
         hide_element('employee--name')
         ''
       end
+    end
+
+    def generate_order_history(history)
+      entries = history.map do |entry|
+        order_flag = if entry['isOrdered'] then 'x' else '-' end
+        "<div>#{order_flag} AD#{entry['offer']['requestNumber']} #{entry['visitor']}</div>"
+      end
+      entries.join
     end
 
   end

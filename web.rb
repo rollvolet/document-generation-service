@@ -34,11 +34,13 @@ post '/documents/visit-report' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  id = json_body['id']
+  data = json_body['request']
+  history = json_body['history']
+  id = data['id']
   path = "/tmp/#{id}-bezoekrapport.pdf"
 
   generator = DocumentGenerator::VisitReport.new
-  generator.generate(path, json_body)
+  generator.generate(path, data, history)
 
   # TODO cleanup temporary created files of WickedPdf
 
