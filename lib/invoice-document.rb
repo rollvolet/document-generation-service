@@ -15,7 +15,7 @@ module DocumentGenerator
     def generate(path, data, language)
       coder = HTMLEntities.new
 
-      isCreditNote =  data['isCreditNote']
+      is_credit_note =  data['isCreditNote']
 
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
@@ -53,16 +53,16 @@ module DocumentGenerator
       pricing = generate_pricing(data, language, coder)
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
-      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price]) unless isCreditNote
-      html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices]) unless isCreditNote
-      html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers] unless isCreditNote
+      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price]) unless is_credit_note
+      html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices]) unless is_credit_note
+      html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers] unless is_credit_note
       html.gsub! '<!-- {{TOTAL_NET}} -->', format_decimal(pricing[:total_net])
       html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
       html.gsub! '<!-- {{TOTAL_GROSS}} -->', format_decimal(pricing[:total_gross])
-      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits]) unless isCreditNote
+      html.gsub! '<!-- {{TOTAL_DEPOSITS}} -->', format_decimal(pricing[:total_deposits]) unless is_credit_note
       html.gsub! '<!-- {{TOTAL_TO_PAY}} -->', format_decimal(pricing[:total_to_pay])
 
-      unless isCreditNote
+      unless is_credit_note
         payment_due_date = generate_payment_due_date(data)
         html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
 
