@@ -103,7 +103,6 @@ post '/documents/delivery-note' do
 
   id = data['id']
   path = "/tmp/#{id}-leveringsbon.pdf"
-
   generator = DocumentGenerator::DeliveryNote.new
   generator.generate(path, data)
 

@@ -1,4 +1,5 @@
 require 'wicked_pdf'
+require 'combine_pdf'
 require_relative './htmlentities'
 require_relative './helpers'
 
@@ -7,14 +8,33 @@ module DocumentGenerator
 
     include DocumentGenerator::Helpers
 
-    def initialize
-      @inline_css = ''
-    end
-
     def generate(path, data)
-      coder = HTMLEntities.new
+      id = data['id']
+      path_supplier = "/tmp/#{id}-delivery-note-supplier.pdf"
+      path_customer = "/tmp/#{id}-delivery-note-customer.pdf"
 
       language = select_language(data)
+
+      @inline_css = ''
+      generate_delivery_note(path_supplier, data, language, 'supplier')
+      @inline_css = ''
+      generate_delivery_note(path_customer, data, language, 'customer')
+
+      merged_pdf = CombinePDF.new
+      merged_pdf << CombinePDF.load(path_supplier)
+      merged_pdf << CombinePDF.load(path_customer)
+
+      document_title = document_title(data, language)
+      merged_pdf.info[:Title] = document_title # See https://github.com/boazsegev/combine_pdf/issues/150
+      merged_pdf.save path
+
+      File.delete(path_supplier)
+      File.delete(path_customer)
+    end
+
+    def generate_delivery_note(path, data, language, scope)
+      coder = HTMLEntities.new
+
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
 
@@ -36,6 +56,7 @@ module DocumentGenerator
       deliverylines = coder.encode(generate_deliverylines(data, language), :named)
       html.gsub! '<!-- {{DELIVERYLINES}} -->', deliverylines
 
+      display_element("scope--#{scope}")
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       header_path = select_header(data, language)
