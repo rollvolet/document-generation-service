@@ -21,6 +21,9 @@ module DocumentGenerator
       date = format_date_object(DateTime.now)
       html.gsub! '<!-- {{DATE}} -->', date
 
+      expected_date = generate_expected_date(data)
+      html.gsub! '<!-- {{EXPECTED_DATE}} -->', expected_date
+
       own_reference = coder.encode(generate_own_reference(data), :named)
       html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
 
@@ -93,6 +96,14 @@ module DocumentGenerator
         line
       end
       orderlines.join
+    end
+
+    def generate_expected_date(data)
+      if data['expectedDate']
+        format_date(data['expectedDate'])
+      else
+        hide_element('expected-date')
+      end
     end
 
     def generate_own_reference(data)

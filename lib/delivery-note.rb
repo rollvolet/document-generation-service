@@ -18,9 +18,6 @@ module DocumentGenerator
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
 
-      date = format_date_object(DateTime.now)
-      html.gsub! '<!-- {{DATE}} -->', date
-
       own_reference = coder.encode(generate_own_reference(data), :named)
       html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
 
