@@ -182,6 +182,10 @@ module DocumentGenerator
       DateTime.parse(date).strftime("%d/%m/%Y")
     end
 
+    def format_date_object(date)
+      date.strftime("%d/%m/%Y")
+    end
+
     def format_telephone(prefix, area, number)
       prefix[0..1] = '+' if prefix and prefix.start_with? '00'
 

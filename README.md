@@ -18,6 +18,14 @@ The following environment variables can be set to configure the absolute path to
 * `OFFER_TEMPLATE_FR`: absolute path of the offer template in French (default: `/templates/offerte-fr.html`)
 * `OFFER_HEADER_TEMPLATE_NL`: absolute path of the offer header template in Dutch (default: `/templates/offerte-header-nl.html`)
 * `OFFER_HEADER_TEMPLATE_FR`: absolute path of the offer header template in French (default: `/templates/offerte-header-fr.html`)
+* `ORDER_TEMPLATE_NL`: absolute path of the order template in Dutch (default: `/templates/bestelbon-nl.html`)
+* `ORDER_TEMPLATE_FR`: absolute path of the order template in French (default: `/templates/bestelbon-fr.html`)
+* `ORDER_HEADER_TEMPLATE_NL`: absolute path of the order header template in Dutch (default: `/templates/bestelbon-header-nl.html`)
+* `ORDER_HEADER_TEMPLATE_FR`: absolute path of the order header template in French (default: `/templates/bestelbon-header-fr.html`)
+* `DELIVERY_NOTE_TEMPLATE_NL`: absolute path of the delivery note template in Dutch (default: `/templates/leveringsbon-nl.html`)
+* `DELIVERY_NOTE_TEMPLATE_FR`: absolute path of the delivery note template in French (default: `/templates/leveringsbon-fr.html`)
+* `DELIVERY_NOTE_HEADER_TEMPLATE_NL`: absolute path of the delivery note header template in Dutch (default: `/templates/leveringsbon-header-nl.html`)
+* `DELIVERY_NOTE_HEADER_TEMPLATE_FR`: absolute path of the delivery note header template in French (default: `/templates/leveringsbon-header-fr.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_NL`: absolute path of the deposit invoice template in Dutch (default: `/templates/voorschotfactuur-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
 * `DEPOSIT_INVOICE_HEADER_TEMPLATE_NL`: absolute path of the deposit invoice header template in Dutch (default: `/templates/voorschotfactuur-header-nl.html`)
@@ -52,6 +60,12 @@ Generates a visit report (PDF file) for a given customer request. The request bo
 
 ### POST /documents/offer
 Generates an offer (PDF file) for a given offer with a set of offerlines. The request body must contain the visitor initials and an offer. The offer must include the related offerlines with VAT rate, customer, contact, building, request and customer/contact telephones.
+
+### POST /documents/order
+Generates an order (PDF file) for a given order with a set of ordered offerlines. The request body must contain the visitor initials and an order. The order must include the offer together with its related request, ordered offerlines and VAT rates, customer, contact, building and customer/contact telephones.
+
+### POST /documents/delivery-note
+Generates a delivery note (PDF file) for a given order with a set of offerlines. The request body must contain the visitor initials and an order. The order must include the offer together with its related request and ordered offerlines, customer, contact, building and customer/contact telephones.
 
 ### POST /documents/invoice
 Generates an invoice or credit note (PDF file) for a given invoice with a set of ordered offerlines.

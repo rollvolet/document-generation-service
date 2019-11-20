@@ -6,6 +6,8 @@ require 'json'
 
 require_relative 'lib/visit-report'
 require_relative 'lib/offer-document'
+require_relative 'lib/order-document'
+require_relative 'lib/delivery-note'
 require_relative 'lib/invoice-document'
 require_relative 'lib/deposit-invoice-document'
 require_relative 'lib/vat-certificate'
@@ -61,6 +63,48 @@ post '/documents/offer' do
   path = "/tmp/#{id}-offerte.pdf"
 
   generator = DocumentGenerator::OfferDocument.new
+  generator.generate(path, data)
+
+  # TODO cleanup temporary created files of WickedPdf
+
+  send_file path
+end
+
+post '/documents/order' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  # Workaround to embed visitor initals in the offer object
+  data = json_body['order']
+  if data['offer'] and data['offer']['request']
+    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
+  end
+
+  id = data['id']
+  path = "/tmp/#{id}-bestelbon.pdf"
+
+  generator = DocumentGenerator::OrderDocument.new
+  generator.generate(path, data)
+
+  # TODO cleanup temporary created files of WickedPdf
+
+  send_file path
+end
+
+post '/documents/delivery-note' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  # Workaround to embed visitor initals in the offer object
+  data = json_body['order']
+  if data['offer'] and data['offer']['request']
+    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
+  end
+
+  id = data['id']
+  path = "/tmp/#{id}-leveringsbon.pdf"
+
+  generator = DocumentGenerator::DeliveryNote.new
   generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
