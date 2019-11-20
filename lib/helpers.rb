@@ -1,20 +1,22 @@
 module DocumentGenerator
   module Helpers
-    def write_to_pdf(path, html, header_html = '', footer_html = '')
-      pdf = WickedPdf.new.pdf_from_string(html, {
-                                            margin: {
-                                              left: 0,
-                                              top: 14, # top margin on each page
-                                              bottom: 20, # height (mm) of the footer
-                                              right: 0
-                                            },
-                                            disable_smart_shrinking: true,
-                                            print_media_type: true,
-                                            page_size: 'A4',
-                                            orientation: 'Portrait',
-                                            header: { content: header_html },
-                                            footer: { content: footer_html }
-                                          })
+    def write_to_pdf(path, html, header_html = '', footer_html = '', document_title = nil)
+      options = {
+        margin: {
+          left: 0,
+          top: 14, # top margin on each page
+          bottom: 20, # height (mm) of the footer
+          right: 0
+        },
+        disable_smart_shrinking: true,
+        print_media_type: true,
+        page_size: 'A4',
+        orientation: 'Portrait',
+        header: { content: header_html },
+        footer: { content: footer_html }
+      }
+      options[:title] = document_title if document_title
+      pdf = WickedPdf.new.pdf_from_string(html, options)
 
       # Write HTML to a document for debugging purposes
       html_path = path.sub '.pdf', '.html'

@@ -52,7 +52,9 @@ module DocumentGenerator
       footer_path = select_footer(data, language)
       footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
 
-      write_to_pdf(path, html, header_html, footer_html)
+      document_title = document_title(data, language)
+
+      write_to_pdf(path, html, header_html, footer_html, document_title)
     end
 
     def select_header(data, language)
@@ -69,6 +71,12 @@ module DocumentGenerator
       else
         ENV['OFFER_TEMPLATE_NL'] || '/templates/offerte-nl.html'
       end
+    end
+
+    def document_title(data, language)
+      reference = generate_header_reference(data)
+      document_type = if language == 'FRA' then 'Offre' else 'Offerte' end
+      "#{document_type} #{reference}"
     end
 
     def generate_offer_date(data)

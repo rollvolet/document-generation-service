@@ -78,7 +78,9 @@ module DocumentGenerator
       footer_path = select_footer(data, language)
       footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
 
-      write_to_pdf(path, html, header_html, footer_html)
+      document_title = document_title(data, language)
+
+      write_to_pdf(path, html, header_html, footer_html, document_title)
     end
 
     def select_header(data, language)
@@ -113,6 +115,11 @@ module DocumentGenerator
       end
     end
 
+    def document_title(data, language)
+      number = generate_invoice_number(data)
+      document_type = if data['isCreditNote'] then 'C' else 'F' end
+      "#{document_type}#{number}"
+    end
 
     def generate_own_reference(data)
       order = data['order']

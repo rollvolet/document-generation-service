@@ -35,7 +35,10 @@ module DocumentGenerator
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
-      write_to_pdf(path, html)
+
+      document_title = document_title(data, language)
+
+      write_to_pdf(path, html, '', '', document_title)
     end
 
     def select_template(data, language)
@@ -44,6 +47,11 @@ module DocumentGenerator
       else
         ENV['CERTIFICATE_TEMPLATE_NL'] || '/templates/attest-nl.html'
       end
+    end
+
+    def document_title(data, language)
+      number = generate_invoice_number(data)
+      "A#{number}"
     end
 
     def generate_customer_name(data)
