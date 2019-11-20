@@ -118,13 +118,12 @@ post '/documents/invoice' do
   # Workaround to embed visitor initals in the invoice object
   data = json_body['invoice']
   data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
-  language = json_body['language']
 
   id = data['id']
   path = "/tmp/#{id}-factuur.pdf"
 
   generator = DocumentGenerator::InvoiceDocument.new
-  generator.generate(path, data, language)
+  generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
 
@@ -138,13 +137,12 @@ post '/documents/deposit-invoice' do
   # Workaround to embed visitor initals in the deposit invoice object
   data = json_body['invoice']
   data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
-  language = json_body['language']
 
   id = data['id']
   path = "/tmp/#{id}-voorschotfactuur.pdf"
 
   generator = DocumentGenerator::DepositInvoiceDocument.new
-  generator.generate(path, data, language)
+  generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
 
@@ -156,13 +154,12 @@ post '/documents/certificate' do
   json_body = JSON.parse request.body.read
 
   data = json_body['invoice']
-  language = json_body['language']
 
   id = data['id']
   path = "/tmp/#{id}-attest.pdf"
 
   generator = DocumentGenerator::VatCertificate.new
-  generator.generate(path, data, language)
+  generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
 

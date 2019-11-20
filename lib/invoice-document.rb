@@ -12,11 +12,12 @@ module DocumentGenerator
       @inline_css = ''
     end
 
-    def generate(path, data, language)
+    def generate(path, data)
       coder = HTMLEntities.new
 
       is_credit_note =  data['isCreditNote']
 
+      language = select_language(data)
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
 
