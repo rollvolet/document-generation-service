@@ -54,7 +54,7 @@ module DocumentGenerator
 
       document_title = document_title(data, language)
 
-      write_to_pdf(path, html, header_html, footer_html, document_title)
+      write_to_pdf(path, html, header: { content: header_html }, footer: { content: footer_html }, title: document_title)
     end
 
     def select_header(data, language)

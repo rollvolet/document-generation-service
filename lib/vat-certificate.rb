@@ -39,7 +39,7 @@ module DocumentGenerator
 
       document_title = document_title(data, language)
 
-      write_to_pdf(path, html, '', '', document_title)
+      write_to_pdf(path, html, title: document_title)
     end
 
     def select_template(data, language)

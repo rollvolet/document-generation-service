@@ -1,7 +1,7 @@
 module DocumentGenerator
   module Helpers
-    def write_to_pdf(path, html, header_html = '', footer_html = '', document_title = nil)
-      options = {
+    def write_to_pdf(path, html, options = {})
+      default_options = {
         margin: {
           left: 0,
           top: 14, # top margin on each page
@@ -12,10 +12,12 @@ module DocumentGenerator
         print_media_type: true,
         page_size: 'A4',
         orientation: 'Portrait',
-        header: { content: header_html },
-        footer: { content: footer_html }
+        header: { content: '' },
+        footer: { content: '' }
       }
-      options[:title] = document_title if document_title
+
+      options = default_options.merge options
+
       pdf = WickedPdf.new.pdf_from_string(html, options)
 
       # Write HTML to a document for debugging purposes
@@ -34,7 +36,7 @@ module DocumentGenerator
     end
 
     # Language is determined by the language of the contact (if there is one) or customer.
-    # Languafe of the building doesn't matter
+    # Language of the building doesn't matter
     def select_language(data)
       language = 'NED'
       if data['contact'] and data['contact']['language']

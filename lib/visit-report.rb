@@ -67,7 +67,7 @@ module DocumentGenerator
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       document_title = "AD#{request_number}"
-      write_to_pdf(path, html, '', '', document_title)
+      write_to_pdf(path, html, title: document_title)
     end
 
     def select_template
