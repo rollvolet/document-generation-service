@@ -19,7 +19,7 @@ module DocumentGenerator
       template_path = select_template(data, language)
       html = File.open(template_path, 'rb') { |file| file.read }
 
-      customer_name = generate_customer_name(data)
+      customer_name = coder.encode(generate_customer_name(data), :named)
       html.gsub! '<!-- {{CUSTOMER_NAME}} -->', customer_name
 
       customer_address = coder.encode(generate_customer_address(data), :named)
