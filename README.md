@@ -26,6 +26,7 @@ The following environment variables can be set to configure the absolute path to
 * `DELIVERY_NOTE_TEMPLATE_FR`: absolute path of the delivery note template in French (default: `/templates/leveringsbon-fr.html`)
 * `DELIVERY_NOTE_HEADER_TEMPLATE_NL`: absolute path of the delivery note header template in Dutch (default: `/templates/leveringsbon-header-nl.html`)
 * `DELIVERY_NOTE_HEADER_TEMPLATE_FR`: absolute path of the delivery note header template in French (default: `/templates/leveringsbon-header-fr.html`)
+* `PRODUCTION_TICKET_TEMPLATE_NL`: absolute path of the production ticket template in Dutch (default: `/templates/productiebon-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_NL`: absolute path of the deposit invoice template in Dutch (default: `/templates/voorschotfactuur-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
 * `DEPOSIT_INVOICE_HEADER_TEMPLATE_NL`: absolute path of the deposit invoice header template in Dutch (default: `/templates/voorschotfactuur-header-nl.html`)
