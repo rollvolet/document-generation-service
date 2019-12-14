@@ -29,6 +29,9 @@ module DocumentGenerator
       order_date = generate_order_date(data)
       html.gsub! '<!-- {{ORDER_DATE}} -->', order_date
 
+      date_out = generate_date_out(data)
+      html.gsub! '<!-- {{DATE_OUT}} -->', date_out
+
       request_number = generate_request_number(data)
       html.gsub! '<!-- {{REQUEST_NUMBER}} -->', request_number
 
@@ -60,6 +63,18 @@ module DocumentGenerator
 
     def generate_order_date(data)
       if data['orderDate'] then format_date(data['orderDate']) else '' end
+    end
+
+    def generate_date_out(data)
+      if data['planningDate']
+        "<span class='planning-date'>#{format_date(data['planningDate'])}</span>"
+      elsif data['expectedDate'] or data['requiredDate']
+        expected_date = if data['expectedDate'] then format_date(data['expectedDate']) else '_______' end
+        required_date = if data['requiredDate'] then format_date(data['requiredDate']) else '_______' end
+        "#{expected_date} - #{required_date}"
+      else
+        '__________________'
+      end
     end
 
     def generate_customer(data)
