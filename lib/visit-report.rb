@@ -48,6 +48,9 @@ module DocumentGenerator
       contact_email_address = generate_contact_email_address(data)
       html.gsub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address
 
+      vat_number = generate_vat_number(data)
+      html.gsub! '<!-- {{VAT_NUMBER}} -->', vat_number
+
       building_address = coder.encode(generate_building_address(data), :named)
       html.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
 
@@ -103,6 +106,14 @@ module DocumentGenerator
       end
     end
 
+    def generate_vat_number(data)
+      if data['customer']['vatNumber']
+        format_vat_number(data['customer']['vatNumber'])
+      else
+        hide_element('table .col .vat-number')
+      end
+    end
+
     def generate_customer(data)
       customer = data['customer']
 
@@ -125,8 +136,6 @@ module DocumentGenerator
       telephones = data['customer']['telephones']
       top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
 
-      vat_number = customer['vatNumber']
-
       contactlines = "<div class='contactline contactline--name'>#{name}</div>"
       contactlines += "<div class='contactline contactline--address'>#{address}</div>"
       contactlines += "<div class='contactline contactline--telephones'>"
@@ -135,7 +144,6 @@ module DocumentGenerator
         contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}</div>"
       end
       contactlines += "</div>"
-      contactlines += "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" if vat_number
       contactlines
     end
 
@@ -173,20 +181,22 @@ module DocumentGenerator
         name += " #{contact['name']}" if contact['name']
         name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
         name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
-      end
 
-      telephones = if contact then contact['telephones'] else data['customer']['telephones'] end
-      top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
+        telephones = contact['telephones']
+        top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
 
-      contactlines = ''
-      contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
-      contactlines += "<div class='contactline contactline--telephones'>"
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
-        contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}</div>"
+        contactlines = ''
+        contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
+        contactlines += "<div class='contactline contactline--telephones'>"
+        top_telephones.each do |tel|
+          formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
+          contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}</div>"
+        end
+        contactlines += "</div>"
+        contactlines
+      else
+        hide_element('table .col .contact')
       end
-      contactlines += "</div>"
-      contactlines
     end
 
     def generate_customer_email_address(data)
@@ -220,7 +230,7 @@ module DocumentGenerator
       entries = history.map do |entry|
         order_flag = if entry['isOrdered'] then 'x' else '-' end
         date = DateTime.parse(entry['offer']['offerDate']).strftime("%m/%Y")
-        "<div>#{order_flag} #{date} #{entry['visitor']}</div>"
+        "<div>#{order_flag} #{date} AD#{entry['offer']['requestNumber']} #{entry['visitor']}</div>"
       end
       entries.join
     end
