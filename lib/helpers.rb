@@ -137,8 +137,13 @@ module DocumentGenerator
     end
 
     def generate_invoice_number(data)
-      number = data['number'].to_s
-      "#{number[0..1]}/#{number[2..-1]}"
+      number = data['number'].to_s || ''
+      if number.length > 4
+        i = number.length - 4
+        "#{number[0..i-1]}/#{number[i..-1]}"
+      else
+        number
+      end
     end
 
     def generate_request_number(data)
