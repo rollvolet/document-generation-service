@@ -136,6 +136,13 @@ module DocumentGenerator
       end
     end
 
+    def generate_bank_reference(data)
+      number = data['number'] || 0
+      modulo_check = number % 97
+      reference = "%012d" % (number.to_s + modulo_check.to_s).to_i
+      "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+    end
+
     def generate_invoice_number(data)
       number = data['number'].to_s || ''
       if number.length > 4

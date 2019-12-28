@@ -36,6 +36,9 @@ module DocumentGenerator
       ext_reference = coder.encode(generate_ext_reference(data), :named)
       html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
 
+      bank_reference = generate_bank_reference(data)
+      html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
+
       # TODO must be the embedded building instead of the referenced
       building = coder.encode(generate_building(data), :named)
       html.gsub! '<!-- {{BUILDING}} -->', building
