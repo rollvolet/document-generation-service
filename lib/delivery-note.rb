@@ -94,10 +94,9 @@ module DocumentGenerator
     end
 
     def generate_deliverylines(data, language)
-      # Offerlines have already been filtered on 'isOrdered' by the backend API
-      deliverylines = data['offer']['offerlines'].map do |offerline|
-        line = "<div class='offerline'>"
-        line += "  <div class='col col-1'>#{offerline['description']}</div>"
+      deliverylines = data['invoicelines'].map do |invoiceline|
+        line = "<div class='deliveryline'>"
+        line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
         line += "</div>"
         line
       end

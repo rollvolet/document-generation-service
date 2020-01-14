@@ -79,15 +79,14 @@ module DocumentGenerator
     end
 
     def generate_orderlines(data, language)
-      # Offerlines have already been filtered on 'isOrdered' by the backend API
-      orderlines = data['offer']['offerlines'].map do |offerline|
-        line = "<div class='offerline'>"
-        line += "  <div class='col col-1'>#{offerline['description']}</div>"
-        line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
+      orderlines = data['invoicelines'].map do |invoiceline|
+        line = "<div class='orderline'>"
+        line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
+        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline['amount'])}</div>"
 
         vat_note_css_class = ''
-        vat_rate = "#{format_vat_rate(offerline['vatRate']['rate'])}%"
-        if offerline['vatRate']['code'] == 'm'
+        vat_rate = "#{format_vat_rate(invoiceline['vatRate']['rate'])}%"
+        if invoiceline['vatRate']['code'] == 'm'
           vat_rate = ''
           vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end

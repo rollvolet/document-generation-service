@@ -142,16 +142,14 @@ module DocumentGenerator
       invoicelines = []
       prices = []
 
-      if data['order']
-        # TODO we assume all ordered offerlines have the same VAT rate as the invoice
-        data['order']['offer']['offerlines'].find_all { |l| l['isOrdered'] }.each do |offerline|
-          prices << offerline['amount']
-          line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1'>#{offerline['description']}</div>"
-          line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
-          line += "</div>"
-          invoicelines << line
-        end
+      # we assume all invoicelines have the same VAT rate as the invoice
+      data['invoicelines'].each do |invoiceline|
+        prices << invoiceline['amount']
+        line = "<div class='invoiceline'>"
+        line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
+        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline['amount'])}</div>"
+        line += "</div>"
+        invoicelines << line
       end
 
       if data['supplements']
@@ -193,7 +191,7 @@ module DocumentGenerator
 
       # TODO we assume invoice and deposit-invoices have the same VAT rate
       vat_rate = data['vatRate']['rate']
-      total_net_order_price = prices.inject(:+) || 0  # sum of ordered offerlines and supplements
+      total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines and supplements
       total_net_deposit_invoices = deposit_invoices.inject(:+) || 0
       total_net = total_net_order_price - total_net_deposit_invoices
       total_vat = total_net * vat_rate / 100
