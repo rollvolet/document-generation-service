@@ -139,7 +139,8 @@ module DocumentGenerator
     def generate_bank_reference(data)
       number = data['number'] || 0
       modulo_check = number % 97
-      reference = "%012d" % (number.to_s + modulo_check.to_s).to_i
+      padded_modulo = "%02d" % modulo_check.to_s
+      reference = "%012d" % (number.to_s + padded_modulo)
       "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
     end
 
