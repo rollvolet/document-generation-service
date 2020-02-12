@@ -128,10 +128,10 @@ module DocumentGenerator
       prices = []
 
       if data['order']
-        data['order']['offer']['offerlines'].find_all { |l| l['isOrdered'] }.each do |offerline|
-          prices << offerline['amount']
+        data['order']['invoicelines'].each do |invoiceline|
+          prices << invoiceline['amount']
           line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1-2'>#{offerline['description']}</div>"
+          line += "  <div class='col col-1-2'>#{invoiceline['description']}</div>"
           line += "</div>"
           invoicelines << line
         end
