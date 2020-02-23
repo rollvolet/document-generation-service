@@ -73,6 +73,12 @@ module DocumentGenerator
         generate_certificate_notification(data)
       end
 
+      if data['order']
+        hide_element('invoiceline.priceline-total-order .intervention-key')
+      else
+        hide_element('invoiceline.priceline-total-order .order-key')
+      end
+
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       header_path = select_header(data, language)
