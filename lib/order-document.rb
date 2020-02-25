@@ -39,8 +39,9 @@ module DocumentGenerator
       addresslines = coder.encode(generate_addresslines(data), :named)
       html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
 
-      orderlines = coder.encode(generate_orderlines(data, language), :named)
-      html.gsub! '<!-- {{ORDERLINES}} -->', orderlines
+      pricing = generate_pricing(data, language)
+      html.gsub! '<!-- {{ORDERLINES}} -->', coder.encode(pricing[:orderlines], :named)
+      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
@@ -78,8 +79,13 @@ module DocumentGenerator
       "#{document_type} #{reference}"
     end
 
-    def generate_orderlines(data, language)
-      orderlines = data['invoicelines'].map do |invoiceline|
+    def generate_pricing(data, language)
+      orderlines = []
+      prices = []
+
+      data['invoicelines'].each do |invoiceline|
+        prices << invoiceline['amount']
+
         line = "<div class='orderline'>"
         line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
         line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline['amount'])}</div>"
@@ -92,9 +98,15 @@ module DocumentGenerator
         end
         line += "  <div class='col col-3 #{vat_note_css_class}'>#{vat_rate}</div>"
         line += "</div>"
-        line
+        orderlines << line
       end
-      orderlines.join
+
+      total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines
+
+      {
+        orderlines: orderlines.join,
+        total_net_order_price: total_net_order_price
+      }
     end
 
     def generate_expected_date(data)

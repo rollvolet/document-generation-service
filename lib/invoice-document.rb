@@ -195,7 +195,7 @@ module DocumentGenerator
         deposit_invoice_numbers = data['depositInvoices'].map { |d| generate_invoice_number(d) }.join(', ')
       end
 
-      # TODO we assume invoice and deposit-invoices have the same VAT rate
+      # we assume invoice and deposit-invoices have the same VAT rate
       vat_rate = data['vatRate']['rate']
       total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines and supplements
       total_net_deposit_invoices = deposit_invoices.inject(:+) || 0
