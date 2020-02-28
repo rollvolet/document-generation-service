@@ -7,17 +7,8 @@ module DocumentGenerator
 
     include DocumentGenerator::Helpers
 
-    def initialize(scope)
+    def initialize()
       @inline_css = ''
-      @scope = scope
-    end
-
-    def isOrder?
-      @scope == 'order'
-    end
-
-    def isIntervention?
-      @scope == 'intervention'
     end
 
     def generate(path, data)
@@ -52,7 +43,7 @@ module DocumentGenerator
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
-      document_title = if isOrder? then generate_request_number(data) else generate_intervention_number(data) end
+      document_title = generate_request_number(data)
       page_margins = { left: 0, top: 0, bottom: 0, right: 0 }
       write_to_pdf(path, html, orientation: 'Landscape', margin: page_margins, title: document_title)
     end
@@ -62,42 +53,24 @@ module DocumentGenerator
     end
 
     def generate_request_number(data)
-      if isOrder?
-        request = data['offer']['request']
-        if request
-          reference = "AD #{request['id']}"
-          visit = request['visit']
-          reference += " #{visit['visitor']}" if visit and visit['visitor']
-          reference
+      request = data['offer']['request']
+      if request
+        reference = "AD #{request['id']}"
+        visit = request['visit']
+        reference += " #{visit['visitor']}" if visit and visit['visitor']
+        reference
         else
           ''
-        end
-      else
-        hide_element('table .row.row--request-number')
-      end
-    end
-
-    def generate_intervention_number(data)
-      if isIntervention?
-        "IR #{data['id']}"
-      else
-        hide_element('table .row.row--intervention-number')
       end
     end
 
     def generate_offer_number(data)
-      if isOrder?
-        data['offer']['number']
-      else
-        hide_element('table .row.row--offer-number')
-      end
+      data['offer']['number']
     end
 
     def generate_date_in(data)
-      if isOrder? and data['orderDate']
+      if data['orderDate']
         format_date(data['orderDate'])
-      elsif isIntervention? and data['date']
-        format_date(data['date'])
       else
         ''
       end

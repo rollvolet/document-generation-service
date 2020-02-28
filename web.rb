@@ -133,22 +133,15 @@ post '/documents/production-ticket' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  scope = if json_body['order'] then 'order' else 'intervention' end
-
-  data = nil
-  if scope == 'order'
-    data = json_body['order']
-    # Workaround to embed visitor initals in the offer object
-    if data['offer'] and data['offer']['request']
-      data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-    end
-  else
-    data = json_body['intervention']
+  data = json_body['order']
+  # Workaround to embed visitor initals in the offer object
+  if data['offer'] and data['offer']['request']
+    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
   end
 
   id = data['id']
-  path = "/tmp/#{id}-productiebon-#{scope}.pdf"
-  generator = DocumentGenerator::ProductionTicket.new(scope)
+  path = "/tmp/#{id}-productiebon.pdf"
+  generator = DocumentGenerator::ProductionTicket.new
   generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
