@@ -5,6 +5,7 @@ require 'better_errors' if development?
 require 'json'
 
 require_relative 'lib/visit-report'
+require_relative 'lib/intervention-report'
 require_relative 'lib/offer-document'
 require_relative 'lib/order-document'
 require_relative 'lib/delivery-note'
@@ -44,6 +45,22 @@ post '/documents/visit-report' do
 
   generator = DocumentGenerator::VisitReport.new
   generator.generate(path, data, history)
+
+  # TODO cleanup temporary created files of WickedPdf
+
+  send_file path
+end
+
+post '/documents/intervention-report' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  data = json_body['intervention']
+  id = data['id']
+  path = "/tmp/#{id}-interventierapport.pdf"
+
+  generator = DocumentGenerator::InterventionReport.new
+  generator.generate(path, data)
 
   # TODO cleanup temporary created files of WickedPdf
 
