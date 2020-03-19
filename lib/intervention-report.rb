@@ -30,8 +30,8 @@ module DocumentGenerator
       html.gsub! '<!-- {{VISIT_DATE}} -->', visit[0]
       html.gsub! '<!-- {{VISIT_TIME}} -->', visit[1]
 
-      visitor = coder.encode(generate_technicians(data), :named)
-      html.gsub! '<!-- {{VISITOR}} -->', visitor
+      technicians = coder.encode(generate_technicians(data), :named)
+      html.gsub! '<!-- {{TECHNICIANS}} -->', technicians
 
       language = generate_language(data)
       html.gsub! '<!-- {{LANGUAGE}} -->', language
@@ -89,17 +89,25 @@ module DocumentGenerator
     end
 
     def generate_visit(data)
-      # TODO update when PlanningAppointment is added to intervention
       visit_date = ''
       visit_time = ''
+
+      if data['planningEvent'] and data['planningEvent']['date']
+        visit_date = format_date(data['planningEvent']['date'])
+
+        if data['planningEvent']['subject']
+          subject = data['planningEvent']['subject']
+          subject = subject.split(': ')[1] if subject.include? ': '
+          visit_time = subject.split(data['customer']['name']).first.chop
+        end
+      end
 
       [visit_date, visit_time]
     end
 
     def generate_technicians(data)
-      # TODO update when technicians are added to intervention
-      if data['visitor'] and data['visitor'] != '(geen)'
-        data['visitor']
+      if data['technicians']
+        data['technicians'].map { |t| t['firstName'] }.join(', ')
       else
         ''
       end
@@ -217,9 +225,8 @@ module DocumentGenerator
     end
 
     def generate_employee_name(data)
-      # TODO update when employee is added to intervention
       if data['employee']
-        data['employee']
+        data['employee']['firstName']
       else
         hide_element('employee--name')
         ''
