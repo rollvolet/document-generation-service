@@ -3,6 +3,7 @@ require 'bundler/setup'
 require 'sinatra'
 require 'better_errors' if development?
 require 'json'
+require 'combine_pdf'
 
 require_relative 'lib/visit-report'
 require_relative 'lib/intervention-report'
@@ -147,6 +148,29 @@ post '/documents/production-ticket' do
   # TODO cleanup temporary created files of WickedPdf
 
   send_file path
+end
+
+post '/documents/production-ticket-watermark' do
+  if params['file']
+    tempfile = params['file'][:tempfile]
+    random = (rand * 100000000).to_i
+    production_ticket_path = "/tmp/#{random}-production-ticket.pdf"
+    FileUtils.copy(tempfile.path, production_ticket_path)
+
+    watermark_path = ENV['PRODUCTION_TICKET_WATERMARK_NL'] || '/watermarks/productiebon-nl.pdf'
+    watermark = CombinePDF.load(watermark_path).pages[0]
+
+    pdf = CombinePDF.load production_ticket_path
+    pdf.pages.each { |page| page << watermark }
+    path = "/tmp/#{random}-production-ticket-watermark.pdf"
+    pdf.save path
+
+    # TODO cleanup temporary created files
+
+    send_file path
+  else
+    halt 400, { title: 'File is required' }
+  end
 end
 
 post '/documents/invoice' do

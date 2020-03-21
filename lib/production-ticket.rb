@@ -35,9 +35,6 @@ module DocumentGenerator
       request_number = generate_request_number(data)
       html.gsub! '<!-- {{REQUEST_NUMBER}} -->', request_number
 
-      intervention_number = generate_intervention_number(data)
-      html.gsub! '<!-- {{INTERVENTION_NUMBER}} -->', intervention_number
-
       offer_number = generate_offer_number(data)
       html.gsub! '<!-- {{OFFER_NUMBER}} -->', offer_number
 
