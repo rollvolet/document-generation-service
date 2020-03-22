@@ -44,6 +44,7 @@ The following environment variables can be set to configure the absolute path to
 * `CERTIFICATE_TEMPLATE_NL`: absolute path of the VAT certificate template in Dutch (default: `/templates/attest-nl.html`)
 * `CERTIFICATE_TEMPLATE_FR`: absolute path of the VAT certificate template in French (default: `/templates/attest-fr.html`)
 * `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
+* `INTERVENTION_REPORT_TEMPLATE_NL`: absolute path of the intervention report template in Dutch (default: `/templates/interventierapport-nl.html`)
 * `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)
 * `FOOTER_TEMPLATE_FR`: absolute path of the footer template in French (default: `/templates/footer-fr.html`)
 
@@ -60,6 +61,9 @@ All endpoints receive a JSON body containing the data required to fill in the va
 
 ### POST /documents/visit-report
 Generates a visit report (PDF file) for a given customer request. The request body must contain a customer request, including the related customer, contact, building, way-of-entry, language and visit.
+
+### POST /documents/intervention-report
+Generates an intervention report (PDF file) for a given intervention. The request body must contain an intervention, including the related customer, contact, building, way-of-entry, language and planning venet.
 
 ### POST /documents/offer
 Generates an offer (PDF file) for a given offer with a set of offerlines. The request body must contain the visitor initials and an offer. The offer must include the related offerlines with VAT rate, customer, contact, building, request and customer/contact telephones.
