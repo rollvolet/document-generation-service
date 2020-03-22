@@ -9,6 +9,7 @@ services:
     image: rollvolet/document-generation-service
     volumes:
       - ./config/templates:/templates
+      - ./config/watermarks:/watermarks
 ```
 
 ## Configuration
@@ -27,6 +28,7 @@ The following environment variables can be set to configure the absolute path to
 * `DELIVERY_NOTE_HEADER_TEMPLATE_NL`: absolute path of the delivery note header template in Dutch (default: `/templates/leveringsbon-header-nl.html`)
 * `DELIVERY_NOTE_HEADER_TEMPLATE_FR`: absolute path of the delivery note header template in French (default: `/templates/leveringsbon-header-fr.html`)
 * `PRODUCTION_TICKET_TEMPLATE_NL`: absolute path of the production ticket template in Dutch (default: `/templates/productiebon-nl.html`)
+* `PRODUCTION_TICKET_WATERMARK_NL`: absolute path of the production ticket watermark in Dutch (default: `/watermarks/productiebon-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_NL`: absolute path of the deposit invoice template in Dutch (default: `/templates/voorschotfactuur-nl.html`)
 * `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
 * `DEPOSIT_INVOICE_HEADER_TEMPLATE_NL`: absolute path of the deposit invoice header template in Dutch (default: `/templates/voorschotfactuur-header-nl.html`)
@@ -67,6 +69,12 @@ Generates an order (PDF file) for a given order with a set of ordered offerlines
 
 ### POST /documents/delivery-note
 Generates a delivery note (PDF file) for a given order with a set of offerlines. The request body must contain the visitor initials and an order. The order must include the offer together with its related request and ordered offerlines, customer, contact, building and customer/contact telephones.
+
+### POST /documents/production-ticket
+Generates a template for a production ticket (PDF file) with the customer and order details prefilled. The request body must contain the order. The order must contain the offer together with its related request, customer, contact, building and customer/contact telephones.
+
+### POST /documents/production-ticket-watermark
+Generates a production ticket with a watermark (PDF file) stating it's already fulfilled. The request body must contain the production-ticket PDF file that must be watermarked.
 
 ### POST /documents/invoice
 Generates an invoice or credit note (PDF file) for a given invoice with a set of ordered offerlines.
