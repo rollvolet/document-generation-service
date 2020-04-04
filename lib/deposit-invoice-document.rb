@@ -123,6 +123,15 @@ module DocumentGenerator
       end
     end
 
+    def generate_bank_reference(data)
+      base = 5000000000
+      ref = base + data['number']
+      modulo_check = ref % 97
+      padded_modulo = "%02d" % modulo_check.to_s
+      reference = "%012d" % (ref.to_s + padded_modulo)
+      "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+    end
+
     def generate_pricing(data)
       invoicelines = []
       prices = []
