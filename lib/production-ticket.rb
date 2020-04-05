@@ -23,8 +23,8 @@ module DocumentGenerator
       building = coder.encode(generate_building(data), :named)
       html.gsub! '<!-- {{BUILDING}} -->', building
 
-      telephones = generate_telephones(data)
-      html.gsub! '<!-- {{TELEPHONES}} -->', telephones
+      contact = coder.encode(generate_contact(data), :named)
+      html.gsub! '<!-- {{CONTACT}} -->', contact
 
       order_date = generate_date_in(data)
       html.gsub! '<!-- {{DATE_IN}} -->', order_date
@@ -104,7 +104,12 @@ module DocumentGenerator
         city
       ].select { |x| x }.join(' - ')
 
-      "#{name}<br>#{address}"
+      result = "#{name}<br>#{address}"
+
+      telephones = generate_telephones(data, 'customer', '; ')
+      result += "<br>#{telephones}" if telephones.length
+
+      result
     end
 
     def generate_building(data)
@@ -127,21 +132,57 @@ module DocumentGenerator
           city
         ].select { |x| x }.join(' - ')
 
-        "#{name}<br>#{address}"
+        result = "#{name}<br>#{address}"
+
+        telephones = generate_telephones(data, 'building', '; ')
+        result += "<br>#{telephones}" if telephones.length
+
+        result
       else
         hide_element('row--building')
       end
     end
 
-    def generate_telephones(data)
-      telephones = if data['contact'] then data['contact']['telephones'] else data['customer']['telephones'] end
+    def generate_contact(data)
+      contact = data['contact']
+
+      if contact
+        hon_prefix = contact['honorificPrefix']
+        name = ''
+        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
+        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
+        name += " #{contact['name']}" if contact['name']
+        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
+        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
+
+        city = if contact['postalCode'] or contact['city'] then "#{contact['postalCode']} #{contact['city']}" else nil end
+        address = [
+          contact['address1'],
+          contact['address2'],
+          contact['address3'],
+          city
+        ].select { |x| x }.join('<br>')
+
+        result = "#{name}<br>#{address}"
+
+        telephones = generate_telephones(data, 'contact')
+        result += "<br>#{telephones}" if telephones.length
+
+        result
+      else
+        hide_element('row--contact')
+      end
+    end
+
+    def generate_telephones(data, scope, separator = '<br>')
+      telephones = data[scope]['telephones']
       top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
 
       formatted_telephones = top_telephones.map do |tel|
         format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
       end
 
-      formatted_telephones.join('<br>')
+      formatted_telephones.join(separator)
     end
 
   end
