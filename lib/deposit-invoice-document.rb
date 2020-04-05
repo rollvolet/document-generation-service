@@ -57,18 +57,20 @@ module DocumentGenerator
       html.gsub! '<!-- {{TOTAL_VAT_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_vat_deposit_invoice])
       html.gsub! '<!-- {{TOTAL_GROSS_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_gross_deposit_invoice])
 
-      if data['paymentDate']
-        hide_element('invoiceline.priceline.priceline-to-pay')
-        hide_element('payment-notification')
-        display_element('invoiceline.priceline.priceline-already-paid')
-      else
-        payment_due_date = generate_payment_due_date(data)
-        html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
-        bank_reference = generate_bank_reference(data)
-        html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
-      end
+      unless data['isCreditNote']
+        if data['paymentDate']
+          hide_element('invoiceline.priceline.priceline-to-pay')
+          hide_element('payment-notification')
+          display_element('invoiceline.priceline.priceline-already-paid')
+        else
+          payment_due_date = generate_payment_due_date(data)
+          html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
+          bank_reference = generate_bank_reference(data)
+          html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
+        end
 
-      generate_certificate_notification(data)
+        generate_certificate_notification(data)
+      end
 
       html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
@@ -85,24 +87,40 @@ module DocumentGenerator
     end
 
     def select_header(data, language)
-      if language == 'FRA'
-        ENV['DEPOSIT_INVOICE_HEADER_TEMPLATE_FR'] || '/templates/voorschotfactuur-header-fr.html'
+      if data['isCreditNote']
+        if language == 'FRA'
+          ENV['CREDIT_NOTE_HEADER_TEMPLATE_FR'] || '/templates/creditnota-header-fr.html'
+        else
+          ENV['CREDIT_NOTE_HEADER_TEMPLATE_NL'] || '/templates/creditnota-header-nl.html'
+        end
       else
-        ENV['DEPOSIT_INVOICE_HEADER_TEMPLATE_NL'] || '/templates/voorschotfactuur-header-nl.html'
+        if language == 'FRA'
+          ENV['DEPOSIT_INVOICE_HEADER_TEMPLATE_FR'] || '/templates/voorschotfactuur-header-fr.html'
+        else
+          ENV['DEPOSIT_INVOICE_HEADER_TEMPLATE_NL'] || '/templates/voorschotfactuur-header-nl.html'
+        end
       end
     end
 
     def select_template(data, language)
-      if language == 'FRA'
-        ENV['DEPOSIT_INVOICE_TEMPLATE_FR'] || '/templates/voorschotfactuur-fr.html'
+      if data['isCreditNote']
+        if language == 'FRA'
+          ENV['DEPOSIT_INVOICE_CREDIT_NOTE_TEMPLATE_FR'] || '/templates/voorschotfactuur-creditnota-fr.html'
+        else
+          ENV['DEPOSIT_INVOICE_CREDIT_NOTE_TEMPLATE_NL'] || '/templates/voorschotfactuur-creditnota-nl.html'
+        end
       else
-        ENV['DEPOSIT_INVOICE_TEMPLATE_NL'] || '/templates/voorschotfactuur-nl.html'
+        if language == 'FRA'
+          ENV['DEPOSIT_INVOICE_TEMPLATE_FR'] || '/templates/voorschotfactuur-fr.html'
+        else
+          ENV['DEPOSIT_INVOICE_TEMPLATE_NL'] || '/templates/voorschotfactuur-nl.html'
+        end
       end
     end
 
     def document_title(data, language)
       number = generate_invoice_number(data)
-      document_type = 'VF'
+      document_type = if data['isCreditNote'] then 'C' else 'VF' end
       "#{document_type}#{number}"
     end
 
@@ -129,7 +147,7 @@ module DocumentGenerator
     end
 
     def generate_bank_reference(data)
-      base = 5000000000
+      base = if data['isCreditNote'] then 8000000000 else 5000000000 end
       ref = base + data['number']
       modulo_check = ref % 97
       padded_modulo = "%02d" % modulo_check.to_s
