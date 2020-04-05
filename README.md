@@ -33,6 +33,8 @@ The following environment variables can be set to configure the absolute path to
 * `DEPOSIT_INVOICE_TEMPLATE_FR`: absolute path of the deposit invoice template in French (default: `/templates/voorschotfactuur-fr.html`)
 * `DEPOSIT_INVOICE_HEADER_TEMPLATE_NL`: absolute path of the deposit invoice header template in Dutch (default: `/templates/voorschotfactuur-header-nl.html`)
 * `DEPOSIT_INVOICE_HEADER_TEMPLATE_FR`: absolute path of the deposit invoice header template in French (default: `/templates/voorschotfactuur-header-fr.html`)
+* `DEPOSIT_INVOICE_CREDIT_NOTE_TEMPLATE_NL`: absolute path of the credit note for a deposit invoice template in Dutch (default: `/templates/voorschotfactuur-creditnota-nl.html`)
+* `DEPOSIT_INVOICE_CREDIT_NOTE_TEMPLATE_FR`: absolute path of the credit note for a deposit invoice template in French (default: `/templates/voorschotfactuur-creditnota-fr.html`)
 * `INVOICE_TEMPLATE_NL`: absolute path of the invoice template in Dutch (default: `/templates/factuur-nl.html`)
 * `INVOICE_TEMPLATE_FR`: absolute path of the invoice template in French (default: `/templates/factuur-fr.html`)
 * `INVOICE_HEADER_TEMPLATE_NL`: absolute path of the invoice header template in Dutch (default: `/templates/factuur-header-nl.html`)
