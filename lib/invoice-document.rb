@@ -205,7 +205,10 @@ module DocumentGenerator
       deposit_invoices = []
       deposit_invoice_numbers = []
       if data['depositInvoices']
-        deposit_invoices = data['depositInvoices'].map { |d| d['amount'] || 0}
+        deposit_invoices = data['depositInvoices'].map do |d|
+          amount = d['amount'] || 0
+          if d['isCreditNote'] then amount * -1.0 else amount end
+        end
         deposit_invoice_numbers = data['depositInvoices'].map { |d| generate_invoice_number(d) }.join(', ')
       end
 
