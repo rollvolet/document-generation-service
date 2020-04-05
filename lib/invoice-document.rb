@@ -36,9 +36,6 @@ module DocumentGenerator
       ext_reference = coder.encode(generate_ext_reference(data), :named)
       html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
 
-      bank_reference = generate_bank_reference(data)
-      html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
-
       # TODO must be the embedded building instead of the referenced
       building = coder.encode(generate_building(data), :named)
       html.gsub! '<!-- {{BUILDING}} -->', building
@@ -67,8 +64,16 @@ module DocumentGenerator
       html.gsub! '<!-- {{TOTAL_TO_PAY}} -->', format_decimal(pricing[:total_to_pay])
 
       unless is_credit_note
-        payment_due_date = generate_payment_due_date(data)
-        html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
+        if data['paymentDate']
+          hide_element('invoiceline.priceline.priceline-to-pay')
+          hide_element('payment-notification')
+          display_element('invoiceline.priceline.priceline-already-paid')
+        else
+          payment_due_date = generate_payment_due_date(data)
+          html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
+          bank_reference = generate_bank_reference(data)
+          html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
+        end
 
         generate_certificate_notification(data)
       end
