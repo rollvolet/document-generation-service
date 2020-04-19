@@ -151,11 +151,7 @@ module DocumentGenerator
 
     def generate_bank_reference(data)
       base = if data['isCreditNote'] then 8000000000 else 0 end
-      ref = base + data['number']
-      modulo_check = ref % 97
-      padded_modulo = "%02d" % modulo_check.to_s
-      reference = "%012d" % (ref.to_s + padded_modulo)
-      "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+      generate_bank_reference_with_base(base, data['number'])
     end
 
     def generate_pricing(data, language, coder)

@@ -158,6 +158,15 @@ module DocumentGenerator
       if data['requestDate'] then format_date(data['requestDate']) else '' end
     end
 
+    def generate_bank_reference_with_base(base, number)
+      ref = base + number
+      modulo_check = ref % 97
+      padded_modulo = "%02d" % modulo_check.to_s
+      padded_modulo = '97' if padded_modulo == '00'
+      reference = "%012d" % (ref.to_s + padded_modulo)
+      "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+    end
+
     def format_decimal(number)
       if number then sprintf("%0.2f", number).gsub(/(\d)(?=\d{3}+\.)/, '\1 ').gsub(/\./, ',') else '' end
     end
