@@ -57,8 +57,8 @@ module DocumentGenerator
       employee = coder.encode(generate_employee_name(data), :named)
       html.gsub! '<!-- {{EMPLOYEE}} -->', employee
 
-      comment = coder.encode(data['comment'] || '', :named)
-      html.gsub! '<!-- {{COMMENT}} -->', comment
+      description = coder.encode(data['description'] || '', :named)
+      html.gsub! '<!-- {{DESCRIPTION}} -->', description
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
