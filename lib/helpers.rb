@@ -133,6 +133,9 @@ module DocumentGenerator
         data['reference']
       else
         hide_element('references--ext_reference')
+        hide_element('row--ext-reference')
+        hide_element('row--ext-reference .row--key')
+        hide_element('row--ext-reference .row--value')
       end
     end
 

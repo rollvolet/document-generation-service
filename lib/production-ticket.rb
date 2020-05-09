@@ -38,6 +38,9 @@ module DocumentGenerator
       offer_number = generate_offer_number(data)
       html.gsub! '<!-- {{OFFER_NUMBER}} -->', offer_number
 
+      ext_reference = generate_ext_reference(data)
+      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
+
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
 
       document_title = generate_request_number(data)
