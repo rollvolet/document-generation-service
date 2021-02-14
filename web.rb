@@ -160,7 +160,7 @@ post '/documents/production-ticket-watermark' do
     watermark_path = ENV['PRODUCTION_TICKET_WATERMARK_NL'] || '/watermarks/productiebon-nl.pdf'
     watermark = CombinePDF.load(watermark_path).pages[0]
 
-    pdf = CombinePDF.load production_ticket_path
+    pdf = CombinePDF.load production_ticket_path, allow_optional_content: true
     pdf.pages.each { |page| page << watermark }
     path = "/tmp/#{random}-production-ticket-watermark.pdf"
     pdf.save path
