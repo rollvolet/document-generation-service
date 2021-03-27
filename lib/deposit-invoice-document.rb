@@ -59,9 +59,9 @@ module DocumentGenerator
 
       unless data['isCreditNote']
         if data['paymentDate']
-          hide_element('invoiceline.priceline.priceline-to-pay')
+          hide_element('invoiceline.summary.priceline-to-pay')
           hide_element('payment-notification')
-          display_element('invoiceline.priceline.priceline-already-paid')
+          display_element('invoiceline.summary.priceline-already-paid')
         else
           payment_due_date = generate_payment_due_date(data)
           html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
@@ -173,8 +173,8 @@ module DocumentGenerator
       is_taxfree = data['vatRate']['code'] == 'm'
 
       if is_taxfree
-        display_element('invoiceline .col.taxfree', 'inline-block')
-        hide_element('invoiceline .col.not-taxfree')
+        display_element('invoiceline.summary .col.taxfree', 'inline-block')
+        hide_element('invoiceline.summary .col.not-taxfree')
       end
 
       {

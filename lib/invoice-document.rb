@@ -55,7 +55,11 @@ module DocumentGenerator
       html.gsub! '<!-- {{INVOICELINES}} -->', coder.encode(pricing[:invoicelines], :named)
       html.gsub! '<!-- {{VAT_RATE}} -->', format_vat_rate(pricing[:vat_rate])
       html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price]) unless is_credit_note
+      html.gsub! '<!-- {{TOTAL_VAT_ORDER_PRICE}} -->', format_decimal(pricing[:total_vat_order_price]) unless is_credit_note
+      html.gsub! '<!-- {{TOTAL_GROSS_ORDER_PRICE}} -->', format_decimal(pricing[:total_gross_order_price]) unless is_credit_note
       html.gsub! '<!-- {{TOTAL_NET_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_net_deposit_invoices]) unless is_credit_note
+      html.gsub! '<!-- {{TOTAL_VAT_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_vat_deposit_invoices]) unless is_credit_note
+      html.gsub! '<!-- {{TOTAL_GROSS_DEPOSIT_INVOICES}} -->', format_decimal(pricing[:total_gross_deposit_invoices]) unless is_credit_note
       html.gsub! '<!-- {{DEPOSIT_INVOICE_NUMBERS}} -->', pricing[:deposit_invoice_numbers] unless is_credit_note
       html.gsub! '<!-- {{TOTAL_NET}} -->', format_decimal(pricing[:total_net])
       html.gsub! '<!-- {{TOTAL_VAT}} -->', format_decimal(pricing[:total_vat])
@@ -65,9 +69,9 @@ module DocumentGenerator
 
       unless is_credit_note
         if data['paymentDate']
-          hide_element('invoiceline.priceline.priceline-to-pay')
+          hide_element('priceline.priceline-to-pay')
           hide_element('payment-notification')
-          display_element('invoiceline.priceline.priceline-already-paid')
+          display_element('priceline.priceline-already-paid')
         else
           payment_due_date = generate_payment_due_date(data)
           html.gsub! '<!-- {{PAYMENT_DUE_DATE}} -->', payment_due_date
@@ -79,9 +83,9 @@ module DocumentGenerator
       end
 
       if data['order']
-        hide_element('invoiceline.priceline-total-order .intervention-key')
+        hide_element('priceline-total-order .intervention-key')
       else
-        hide_element('invoiceline.priceline-total-order .order-key')
+        hide_element('priceline-total-order .order-key')
       end
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
@@ -210,31 +214,48 @@ module DocumentGenerator
 
       # we assume invoice and deposit-invoices have the same VAT rate
       vat_rate = data['vatRate']['rate']
+
       total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines and supplements
+      total_vat_order_price = total_net_order_price * vat_rate / 100
+      total_gross_order_price = total_net_order_price + total_vat_order_price
+
       total_net_deposit_invoices = deposit_invoices.inject(:+) || 0
+      total_vat_deposit_invoices = total_net_deposit_invoices * vat_rate / 100
+      total_gross_deposit_invoices = total_net_deposit_invoices + total_vat_deposit_invoices
+
       total_net = total_net_order_price - total_net_deposit_invoices
       total_vat = total_net * vat_rate / 100
       total_gross = total_net + total_vat
+
       total_deposits = deposits.inject(:+) || 0
       total_to_pay = total_gross - total_deposits
-      is_taxfree = data['vatRate']['code'] == 'm'
-      is_six_pct_vat = data['vatRate']['code'] == '6'
 
       hide_element('priceline-deposit') if total_deposits == 0
-      hide_element('priceline-deposit-invoice') if total_net_deposit_invoices == 0
-
-      if is_taxfree
-        display_element('invoiceline .col.taxfree', 'inline-block')
-        hide_element('invoiceline .col.not-taxfree')
+      if total_net_deposit_invoices == 0
+        hide_element('priceline-total-order')
+        hide_element('priceline-deposit-invoice')
       end
 
+      is_taxfree = data['vatRate']['code'] == 'm'
+      if is_taxfree
+        display_element('invoiceline.summary .col.taxfree', 'inline-block')
+        display_element('priceline .col.taxfree', 'inline-block')
+        hide_element('invoiceline.summary .col.not-taxfree')
+        hide_element('priceline .col.not-taxfree')
+      end
+
+      is_six_pct_vat = data['vatRate']['code'] == '6'
       hide_element('vat-6-pct') unless is_six_pct_vat
 
       {
         invoicelines: invoicelines.join,
         vat_rate: vat_rate,
         total_net_order_price: total_net_order_price,
+        total_vat_order_price: total_vat_order_price,
+        total_gross_order_price: total_gross_order_price,
         total_net_deposit_invoices: total_net_deposit_invoices,
+        total_vat_deposit_invoices: total_vat_deposit_invoices,
+        total_gross_deposit_invoices: total_gross_deposit_invoices,
         deposit_invoice_numbers: deposit_invoice_numbers,
         total_net: total_net,
         total_vat: total_vat,
