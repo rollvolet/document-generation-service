@@ -38,7 +38,7 @@ module DocumentGenerator
       offer_number = generate_offer_number(data)
       html.gsub! '<!-- {{OFFER_NUMBER}} -->', offer_number
 
-      ext_reference = generate_ext_reference(data)
+      ext_reference = coder.encode(generate_ext_reference(data), :named)
       html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
 
       html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
