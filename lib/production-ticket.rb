@@ -26,6 +26,9 @@ module DocumentGenerator
       contact = coder.encode(generate_contact(data), :named)
       html.gsub! '<!-- {{CONTACT}} -->', contact
 
+      execution = generate_execution_label(data)
+      html.gsub! '<!-- {{EXECUTION}} -->', execution
+
       order_date = generate_date_in(data)
       html.gsub! '<!-- {{DATE_IN}} -->', order_date
 
@@ -175,6 +178,13 @@ module DocumentGenerator
       else
         hide_element('row--contact')
       end
+    end
+
+    def generate_execution_label(data)
+      execution = 'Af te halen'
+      execution = 'Te plaatsen' if data['mustBeInstalled']
+      execution = 'Te leveren' if data['mustBeDelivered']
+      execution
     end
 
     def generate_telephones(data, scope, separator = '<br>')
