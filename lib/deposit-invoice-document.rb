@@ -128,7 +128,7 @@ module DocumentGenerator
       order = data['order']
       if order
         offer = order['offer']
-        own_reference = "<b>AD #{order['requestNumber']}</b>"
+        own_reference = "<b>AD #{format_request_number(order['requestNumber'])}</b>"
         own_reference += " <b>#{data['visit']['visitor']}</b>" if data['visit']
         own_reference += "<br><span class='note'>#{offer['number']} #{offer['documentVersion']}</span>"
         own_reference
@@ -140,7 +140,7 @@ module DocumentGenerator
     def generate_request_number(data)
       order = data['order']
       if order
-        "<b>AD #{order['requestNumber']}</b>"
+        "<b>AD #{format_request_number(order['requestNumber'])}</b>"
       else
         hide_element('introduction--reference')
       end

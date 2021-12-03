@@ -150,7 +150,7 @@ module DocumentGenerator
     end
 
     def generate_request_number(data)
-      data['id'].to_s
+      format_request_number(data['id'].to_s)
     end
 
     def generate_invoice_date(data)
@@ -168,6 +168,14 @@ module DocumentGenerator
       padded_modulo = '97' if padded_modulo == '00'
       reference = "%012d" % (ref.to_s + padded_modulo)
       "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+    end
+
+    def format_request_number(number)
+      if number
+        number.to_s.reverse.chars.each_slice(3).map(&:join).join(" ").reverse
+      else
+        number
+      end
     end
 
     def format_decimal(number)
