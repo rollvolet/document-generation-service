@@ -181,7 +181,7 @@ module DocumentGenerator
     end
 
     def generate_execution_label(data)
-      execution = 'Af te halen'
+      execution = 'Zonder plaatsing'
       execution = 'Te plaatsen' if data['mustBeInstalled']
       execution = 'Te leveren' if data['mustBeDelivered']
       execution
