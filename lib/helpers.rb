@@ -172,7 +172,7 @@ module DocumentGenerator
 
     def format_request_number(number)
       if number
-        number.to_s.reverse.chars.each_slice(3).map(&:join).join(" ").reverse
+        number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
       else
         number
       end
