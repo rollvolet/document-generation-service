@@ -108,7 +108,8 @@ module DocumentGenerator
         own_reference = "<b>AD #{format_request_number(request['id'])}</b>"
         visit = request['visit']
         own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
-        own_reference += "<br><span class='note'>#{data['number']} #{data['documentVersion']}</span>"
+        version = if data['documentVersion'] == 'v1' then '' else data['documentVersion'] end
+        own_reference += "<br><span class='note'>#{data['number']} #{version}</span>"
       else
         hide_element('references--own_reference')
       end
