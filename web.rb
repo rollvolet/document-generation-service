@@ -160,14 +160,19 @@ post '/documents/production-ticket-watermark' do
     watermark_path = ENV['PRODUCTION_TICKET_WATERMARK_NL'] || '/watermarks/productiebon-nl.pdf'
     watermark = CombinePDF.load(watermark_path).pages[0]
 
-    pdf = CombinePDF.load production_ticket_path, allow_optional_content: true
-    pdf.pages.each { |page| page << watermark }
-    path = "/tmp/#{random}-production-ticket-watermark.pdf"
-    pdf.save path
+    begin
+      pdf = CombinePDF.load production_ticket_path, allow_optional_content: true
+      pdf.pages.each { |page| page << watermark }
+      path = "/tmp/#{random}-production-ticket-watermark.pdf"
+      pdf.save path
 
-    # TODO cleanup temporary created files
+      # TODO cleanup temporary created files
 
-    send_file path
+      send_file path
+    rescue CombinePDF::ParsingError
+      # log.warn "Unable to parse incoming production ticket PDF and add a watermark. Just returning the original production ticket instead."
+      send_file production_ticket_path
+    end
   else
     halt 400, { title: 'File is required' }
   end
