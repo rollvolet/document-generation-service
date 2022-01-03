@@ -1,5 +1,7 @@
 module DocumentGenerator
   module Helpers
+    BASE_URI = 'http://data.rollvolet.be/%{resource}/%{id}'
+
     def write_to_pdf(path, html, options = {})
       default_options = {
         margin: {
@@ -53,6 +55,10 @@ module DocumentGenerator
       else
         ENV['FOOTER_TEMPLATE_NL'] || '/templates/footer-nl.html'
       end
+    end
+
+    def get_resource_uri(resource, id)
+      BASE_URI % { :resource => resource, :id => id }
     end
 
     def generate_building(data)

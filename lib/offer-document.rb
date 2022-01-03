@@ -84,14 +84,38 @@ module DocumentGenerator
     end
 
     def generate_offerlines(data, language)
-      offerlines = data['offerlines'].map do |offerline|
+      offer_uri = get_resource_uri('offers', data['id'])
+
+      query = " PREFIX schema: <http://schema.org/>"
+      query += " PREFIX dct: <http://purl.org/dc/terms/>"
+      query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+      query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+      query += " SELECT ?description ?amount ?vatCode ?rate"
+      query += " WHERE {"
+      query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+      query += "     ?offerline a crm:Offerline ;"
+      query += "       dct:isPartOf <#{offer_uri}> ;"
+      query += "       dct:description ?description ;"
+      query += "       schema:amount ?amount ;"
+      query += "       price:hasVatRate ?vatRate ."
+      query += "   }"
+      query += "   GRAPH <http://mu.semte.ch/graphs/public> {"
+      query += "     ?vatRate a price:VatRate ;"
+      query += "       schema:value ?rate ;"
+      query += "       schema:identifier ?vatCode ."
+      query += "   }"
+      query += " }"
+
+      solutions = query(query)
+
+      offerlines = solutions.map do |offerline|
         line = "<div class='offerline'>"
-        line += "  <div class='col col-1'>#{offerline['description']}</div>"
-        line += "  <div class='col col-2'>&euro; #{format_decimal(offerline['amount'])}</div>"
+        line += "  <div class='col col-1'>#{offerline[:description]}</div>"
+        line += "  <div class='col col-2'>&euro; #{format_decimal(offerline[:amount])}</div>"
 
         vat_note_css_class = ''
-        vat_rate = "#{format_vat_rate(offerline['vatRate']['rate'])}%"
-        if offerline['vatRate']['code'] == 'm'
+        vat_rate = "#{format_vat_rate(offerline[:rate])}%"
+        if offerline[:vatCode] == 'm'
           vat_rate = ''
           vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end
