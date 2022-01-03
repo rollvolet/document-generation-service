@@ -1,4 +1,4 @@
-FROM erikap/ruby-sinatra:1.0.0
+FROM semtech/mu-ruby-template:2.11.1
 
 LABEL maintainer="erika.pauwels@gmail.com"
 

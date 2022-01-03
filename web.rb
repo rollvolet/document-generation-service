@@ -1,8 +1,3 @@
-require 'rubygems'
-require 'bundler/setup'
-require 'sinatra'
-require 'better_errors' if development?
-require 'json'
 require 'combine_pdf'
 
 require_relative 'lib/visit-report'
@@ -18,11 +13,6 @@ require_relative 'lib/vat-certificate'
 # TODO file cleanup job?
 
 configure :development do
-  use BetterErrors::Middleware
-  BetterErrors::Middleware.allow_ip! '0.0.0.0/0'
-  # you need to set the application root in order to abbreviate filenames within the application:
-  BetterErrors.application_root = File.expand_path('..', __FILE__)
-
   class WickedPdf # monkey patch useful for debugging
     def in_development_mode?
       true
