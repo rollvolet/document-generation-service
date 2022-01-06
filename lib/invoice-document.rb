@@ -159,15 +159,40 @@ module DocumentGenerator
     end
 
     def generate_pricing(data, language, coder)
+      invoice_uri = get_resource_uri('invoices', data['id'])
+
+      query = " PREFIX schema: <http://schema.org/>"
+      query += " PREFIX dct: <http://purl.org/dc/terms/>"
+      query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+      query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+      query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
+      query += " SELECT ?description ?amount ?vatCode ?rate"
+      query += " WHERE {"
+      query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+      query += "     ?invoiceline a crm:Invoiceline ;"
+      query += "       dct:isPartOf <#{invoice_uri}> ;"
+      query += "       dct:description ?description ;"
+      query += "       schema:amount ?amount ;"
+      query += "       price:hasVatRate ?vatRate ."
+      query += "   }"
+      query += "   GRAPH <http://mu.semte.ch/graphs/public> {"
+      query += "     ?vatRate a price:VatRate ;"
+      query += "       schema:value ?rate ;"
+      query += "       schema:identifier ?vatCode ."
+      query += "   }"
+      query += " }"
+
+      solutions = query(query)
+
       invoicelines = []
       prices = []
 
       # we assume all invoicelines have the same VAT rate as the invoice
-      data['invoicelines'].each do |invoiceline|
-        prices << invoiceline['amount']
+      solutions.each do |invoiceline|
+        prices << invoiceline[:amount]
         line = "<div class='invoiceline'>"
-        line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
-        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline['amount'])}</div>"
+        line += "  <div class='col col-1'>#{invoiceline[:description]}</div>"
+        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline[:amount])}</div>"
         line += "</div>"
         invoicelines << line
       end

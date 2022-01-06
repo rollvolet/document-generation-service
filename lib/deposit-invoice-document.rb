@@ -156,10 +156,28 @@ module DocumentGenerator
       prices = []
 
       if data['order']
-        data['order']['invoicelines'].each do |invoiceline|
-          prices << invoiceline['amount']
+        order_uri = get_resource_uri('orders', data['order']['id'])
+
+        query = " PREFIX schema: <http://schema.org/>"
+        query += " PREFIX dct: <http://purl.org/dc/terms/>"
+        query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+        query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
+        query += " SELECT ?description ?amount"
+        query += " WHERE {"
+        query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+        query += "     ?invoiceline a crm:Invoiceline ;"
+        query += "       prov:wasDerivedFrom <#{order_uri}> ;"
+        query += "       dct:description ?description ;"
+        query += "       schema:amount ?amount ."
+        query += "   }"
+        query += " }"
+
+        solutions = query(query)
+
+        solutions.each do |invoiceline|
+          prices << invoiceline[:amount]
           line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1-2'>#{invoiceline['description']}</div>"
+          line += "  <div class='col col-1-2'>#{invoiceline[:description]}</div>"
           line += "</div>"
           invoicelines << line
         end

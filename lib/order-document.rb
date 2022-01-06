@@ -83,19 +83,44 @@ module DocumentGenerator
     end
 
     def generate_pricing(data, language)
+      order_uri = get_resource_uri('orders', data['id'])
+
+      query = " PREFIX schema: <http://schema.org/>"
+      query += " PREFIX dct: <http://purl.org/dc/terms/>"
+      query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+      query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+      query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
+      query += " SELECT ?description ?amount ?vatCode ?rate"
+      query += " WHERE {"
+      query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+      query += "     ?invoiceline a crm:Invoiceline ;"
+      query += "       prov:wasDerivedFrom <#{order_uri}> ;"
+      query += "       dct:description ?description ;"
+      query += "       schema:amount ?amount ;"
+      query += "       price:hasVatRate ?vatRate ."
+      query += "   }"
+      query += "   GRAPH <http://mu.semte.ch/graphs/public> {"
+      query += "     ?vatRate a price:VatRate ;"
+      query += "       schema:value ?rate ;"
+      query += "       schema:identifier ?vatCode ."
+      query += "   }"
+      query += " }"
+
+      solutions = query(query)
+
       orderlines = []
       prices = []
 
-      data['invoicelines'].each do |invoiceline|
-        prices << invoiceline['amount']
+      solutions.each do |invoiceline|
+        prices << invoiceline[:amount]
 
         line = "<div class='orderline'>"
-        line += "  <div class='col col-1'>#{invoiceline['description']}</div>"
-        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline['amount'])}</div>"
+        line += "  <div class='col col-1'>#{invoiceline[:description]}</div>"
+        line += "  <div class='col col-2'>&euro; #{format_decimal(invoiceline[:amount])}</div>"
 
         vat_note_css_class = ''
-        vat_rate = "#{format_vat_rate(invoiceline['vatRate']['rate'])}%"
-        if invoiceline['vatRate']['code'] == 'm'
+        vat_rate = "#{format_vat_rate(invoiceline[:rate])}%"
+        if invoiceline[:vatCode] == 'm'
           vat_rate = ''
           vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end
