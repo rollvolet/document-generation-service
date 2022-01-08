@@ -197,31 +197,6 @@ module DocumentGenerator
         invoicelines << line
       end
 
-      if data['supplements']
-        data['supplements'].each do |supplement|
-          nb = supplement['nbOfPieces'] || 1.0
-          nb_display = if nb % 1 == 0 then nb.floor else format_decimal(nb) end
-
-          unit = ''
-          if (supplement['unit'])
-            unit_code = supplement['unit']['code']
-            unit_separator = if unit == 'M' or unit == 'M2' then '' else ' ' end
-            unit = if language == 'FRA' then supplement['unit']['nameFra'] else supplement['unit']['nameNed'] end
-            unit = coder.encode(unit, :named)
-            unit = 'm<sup>2</sup>' if unit_code == 'M2'
-          end
-
-          line_price = supplement['amount'] || 0
-
-          prices << line_price
-          line = "<div class='invoiceline'>"
-          line += "  <div class='col col-1'>#{nb_display}#{unit_separator}#{unit} #{supplement['description']}</div>"
-          line += "  <div class='col col-2'>&euro; #{format_decimal(line_price)}</div>"
-          line += "</div>"
-          invoicelines << line
-        end
-      end
-
       deposits = []
       if data['deposits']
         deposits = data['deposits'].map { |d| d['amount'] || 0 }
@@ -240,7 +215,7 @@ module DocumentGenerator
       # we assume invoice and deposit-invoices have the same VAT rate
       vat_rate = data['vatRate']['rate']
 
-      total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines and supplements
+      total_net_order_price = prices.inject(:+) || 0  # sum of invoicelines
       total_vat_order_price = total_net_order_price * vat_rate / 100
       total_gross_order_price = total_net_order_price + total_vat_order_price
 
