@@ -168,9 +168,10 @@ module DocumentGenerator
         query += "     ?invoiceline a crm:Invoiceline ;"
         query += "       prov:wasDerivedFrom <#{order_uri}> ;"
         query += "       dct:description ?description ;"
-        query += "       schema:amount ?amount ."
+        query += "       schema:amount ?amount ;"
+        query += "       schema:position ?position ."
         query += "   }"
-        query += " }"
+        query += " } ORDER BY ?position"
 
         solutions = query(query)
 

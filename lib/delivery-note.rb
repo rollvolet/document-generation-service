@@ -96,7 +96,8 @@ module DocumentGenerator
     def generate_deliverylines(data, language)
       order_uri = get_resource_uri('orders', data['id'])
 
-      query = " PREFIX dct: <http://purl.org/dc/terms/>"
+      query = " PREFIX schema: <http://schema.org/>"
+      query += " PREFIX dct: <http://purl.org/dc/terms/>"
       query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
       query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
       query += " SELECT ?description"
@@ -104,9 +105,10 @@ module DocumentGenerator
       query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
       query += "     ?invoiceline a crm:Invoiceline ;"
       query += "       prov:wasDerivedFrom <#{order_uri}> ;"
-      query += "       dct:description ?description ."
+      query += "       dct:description ?description ;"
+      query += "       schema:position ?position ."
       query += "   }"
-      query += " }"
+      query += " } ORDER BY ?position"
 
       solutions = query(query)
       deliverylines = solutions.map do |invoiceline|

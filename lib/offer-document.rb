@@ -97,14 +97,15 @@ module DocumentGenerator
       query += "       dct:isPartOf <#{offer_uri}> ;"
       query += "       dct:description ?description ;"
       query += "       schema:amount ?amount ;"
-      query += "       price:hasVatRate ?vatRate ."
+      query += "       price:hasVatRate ?vatRate ;"
+      query += "       schema:position ?position ."
       query += "   }"
       query += "   GRAPH <http://mu.semte.ch/graphs/public> {"
       query += "     ?vatRate a price:VatRate ;"
       query += "       schema:value ?rate ;"
       query += "       schema:identifier ?vatCode ."
       query += "   }"
-      query += " }"
+      query += " } ORDER BY ?position"
 
       solutions = query(query)
 
