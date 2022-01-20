@@ -107,7 +107,7 @@ module DocumentGenerator
       query += "   }"
       query += " } ORDER BY ?position"
 
-      solutions = query(query)
+      solutions = Mu.query(query)
 
       offerlines = solutions.map do |offerline|
         line = "<div class='offerline'>"

@@ -110,7 +110,7 @@ module DocumentGenerator
       query += "   }"
       query += " } ORDER BY ?position"
 
-      solutions = query(query)
+      solutions = Mu.query(query)
       deliverylines = solutions.map do |invoiceline|
         line = "<div class='deliveryline'>"
         line += "  <div class='col col-1'>#{invoiceline[:description]}</div>"

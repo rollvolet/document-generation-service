@@ -107,7 +107,7 @@ module DocumentGenerator
       query += "   }"
       query += " } ORDER BY ?position"
 
-      solutions = query(query)
+      solutions = Mu.query(query)
 
       orderlines = []
       prices = []
