@@ -43,8 +43,6 @@ The following environment variables can be set to configure the absolute path to
 * `CREDIT_NOTE_TEMPLATE_FR`: absolute path of the credit note template in French (default: `/templates/creditnota-fr.html`)
 * `CREDIT_NOTE_HEADER_TEMPLATE_NL`: absolute path of the credit note header template in Dutch (default: `/templates/creditnota-header-nl.html`)
 * `CREDIT_NOTE_HEADER_TEMPLATE_FR`: absolute path of the credit note header template in French (default: `/templates/creditnota-header-fr.html`)
-* `CERTIFICATE_TEMPLATE_NL`: absolute path of the VAT certificate template in Dutch (default: `/templates/attest-nl.html`)
-* `CERTIFICATE_TEMPLATE_FR`: absolute path of the VAT certificate template in French (default: `/templates/attest-fr.html`)
 * `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
 * `INTERVENTION_REPORT_TEMPLATE_NL`: absolute path of the intervention report template in Dutch (default: `/templates/interventierapport-nl.html`)
 * `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)

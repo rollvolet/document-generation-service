@@ -69,7 +69,7 @@ module DocumentGenerator
           html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
         end
 
-        generate_certificate_notification(data)
+        hide_element('certificate-notification') unless data['vatRate']['code'] == '6'
       end
 
       html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css
@@ -213,10 +213,6 @@ module DocumentGenerator
         hide_element('payment-notification--deadline')
         ''
       end
-    end
-
-    def generate_certificate_notification(data)
-      hide_element('certificate-notification') if not data['certificateRequired'] or data['certificateReceived']
     end
   end
 end

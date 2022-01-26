@@ -79,7 +79,7 @@ module DocumentGenerator
           html.gsub! '<!-- {{BANK_REFERENCE}} -->', bank_reference
         end
 
-        generate_certificate_notification(data)
+        hide_element('certificate-notification') unless data['vatRate']['code'] == '6'
       end
 
       if data['order']
@@ -245,9 +245,6 @@ module DocumentGenerator
         hide_element('priceline .col.not-taxfree')
       end
 
-      is_six_pct_vat = data['vatRate']['code'] == '6'
-      hide_element('vat-6-pct') unless is_six_pct_vat
-
       {
         invoicelines: invoicelines.join,
         vat_rate: vat_rate,
@@ -273,10 +270,6 @@ module DocumentGenerator
         hide_element('payment-notification--deadline')
         ''
       end
-    end
-
-    def generate_certificate_notification(data)
-      hide_element('certificate-notification') if not data['certificateRequired'] or data['certificateReceived']
     end
   end
 end
