@@ -1,6 +1,7 @@
 require 'wicked_pdf'
 require_relative './htmlentities'
 require_relative './helpers'
+require_relative './sparql_queries'
 
 module DocumentGenerator
   class VisitReport
@@ -133,15 +134,16 @@ module DocumentGenerator
         "#{customer['postalCode']} #{customer['city']}"
       ].find_all { |a| a }.join('<br>')
 
-      telephones = data['customer']['telephones']
-      top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
+      telephones = fetch_telephones(customer['dataId'])
+      top_telephones = telephones.first(2)
 
       contactlines = "<div class='contactline contactline--name'>#{name}</div>"
       contactlines += "<div class='contactline contactline--address'>#{address}</div>"
       contactlines += "<div class='contactline contactline--telephones'>"
       top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
-        contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}</div>"
+        formatted_tel = format_telephone(tel[:prefix], tel[:value])
+        note = if tel[:note] then "(#{tel[:note]})" else '' end
+        contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel} #{note}</div>"
       end
       contactlines += "</div>"
       contactlines
@@ -182,15 +184,16 @@ module DocumentGenerator
         name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
         name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
 
-        telephones = contact['telephones']
-        top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
+        telephones = fetch_telephones(contact['id'], 'contacts')
+        top_telephones = telephones.first(2)
 
         contactlines = ''
         contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
         contactlines += "<div class='contactline contactline--telephones'>"
         top_telephones.each do |tel|
-          formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
-          contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}</div>"
+          formatted_tel = format_telephone(tel[:prefix], tel[:value])
+          note = if tel[:note] then "(#{tel[:note]})" else '' end
+          contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}#{note}</div>"
         end
         contactlines += "</div>"
         contactlines

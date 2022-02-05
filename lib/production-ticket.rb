@@ -112,7 +112,7 @@ module DocumentGenerator
 
       result = "#{name}<br>#{address}"
 
-      telephones = generate_telephones(data, 'customer', '; ')
+      telephones = generate_telephones(customer['dataId'], 'customers', '; ')
       result += "<br>#{telephones}" if telephones.length
 
       result
@@ -140,7 +140,7 @@ module DocumentGenerator
 
         result = "#{name}<br>#{address}"
 
-        telephones = generate_telephones(data, 'building', '; ')
+        telephones = generate_telephones(building['id'], 'buildings', '; ')
         result += "<br>#{telephones}" if telephones.length
 
         result
@@ -171,7 +171,7 @@ module DocumentGenerator
 
         result = "#{name}<br>#{address}"
 
-        telephones = generate_telephones(data, 'contact')
+        telephones = generate_telephones(contact['id'], 'contacts')
         result += "<br>#{telephones}" if telephones.length
 
         result
@@ -187,12 +187,12 @@ module DocumentGenerator
       execution
     end
 
-    def generate_telephones(data, scope, separator = '<br>')
-      telephones = data[scope]['telephones']
-      top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
+    def generate_telephones(data_id, scope, separator = '<br>')
+      telephones = fetch_telephones(data_id, scope)
+      top_telephones = telephones.first(2)
 
       formatted_telephones = top_telephones.map do |tel|
-        format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
+        format_telephone(tel[:prefix], tel[:value])
       end
 
       formatted_telephones.join(separator)

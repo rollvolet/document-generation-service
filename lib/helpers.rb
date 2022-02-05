@@ -221,19 +221,88 @@ module DocumentGenerator
       date.strftime("%d/%m/%Y")
     end
 
-    def format_telephone(prefix, area, number)
-      prefix[0..1] = '+' if prefix and prefix.start_with? '00'
+    def format_telephone(prefix, value)
+      formatted_prefix = prefix.dup
+      formatted_prefix[0..1] = '+' if prefix and prefix.start_with? '00'
 
-      area = "(#{area[0]})#{area[1..-1]}" if area and area.length > 0
+      if (value)
+        area = find_area(value);
+        if (area)
+          group_per_2_chars = /(?=(?:..)*$)/
+          number_groups = value[area.size..].split(group_per_2_chars)
+          if (number_groups.size > 1 and number_groups[0].size == 1)
+            # concatenate first 2 elements if first element only contains 1 character
+            number_groups[0..1] = "#{number_groups[0]}#{number_groups[1]}"
+          end
 
-      if number.length == 6
-        number = "#{number[0..1]} #{number[2..3]} #{number[4..-1]}"
-      elsif number.length > 6
-        number = "#{number[0..2]} #{number[3..4]} #{number[5..-1]}"
+          number = "#{area} #{number_groups.join(' ')}"
+          if (number.start_with? '0')
+            formatted_number = "(#{number[0]})#{number[1..]}"
+          else
+            formatted_number = number
+          end
+        else
+          formatted_number = value;
+        end
       end
 
-      "#{prefix} #{area} #{number}"
+      [formatted_prefix, formatted_number].find_all { |e| e }.join(' ');
     end
 
+    def find_area(value)
+      area = AREA_NUMBERS.find { |area| value.start_with?(area) }
+      if (area == '04' && value.size > 2)
+        # In area '04' only numbers like '2xx xx xx' and '3xx xx xx' occur.
+        # That's how they can be distinguished from cell phone numbers
+        if (not ['2', '3'].include?(value[2]))
+          # we assume it's a cell phone number, hence area is 4 characters (eg. 0475)
+          area = value.slice(0, 4);
+        end
+      end
+      area
+    end
+
+    # all known area numbers in Belgium as found on
+    # https://nl.wikipedia.org/wiki/Lijst_van_Belgische_zonenummers
+    AREA_NUMBERS = [
+      '02',
+      '03',
+      '04',
+      '09',
+      '010',
+      '011',
+      '012',
+      '013',
+      '014',
+      '015',
+      '016',
+      '019',
+      '050',
+      '051',
+      '052',
+      '053',
+      '054',
+      '055',
+      '056',
+      '057',
+      '058',
+      '059',
+      '060',
+      '061',
+      '063',
+      '064',
+      '065',
+      '067',
+      '069',
+      '071',
+      '080',
+      '081',
+      '082',
+      '083',
+      '085',
+      '086',
+      '087',
+      '089',
+    ];
   end
 end
