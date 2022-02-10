@@ -95,7 +95,7 @@ module DocumentGenerator
       customer = data['customer']
       hon_prefix = customer['honorificPrefix']
 
-      name = ''
+      name = "[#{customer['number']}] "
       name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and customer['printInFront']
       name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
       name += " #{customer['name']}" if customer['name']
