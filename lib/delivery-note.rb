@@ -2,6 +2,7 @@ require 'wicked_pdf'
 require 'combine_pdf'
 require_relative './htmlentities'
 require_relative './helpers'
+require_relative './sparql_queries'
 
 module DocumentGenerator
   class DeliveryNote
@@ -94,23 +95,7 @@ module DocumentGenerator
     end
 
     def generate_deliverylines(data, language)
-      order_uri = get_resource_uri('orders', data['id'])
-
-      query = " PREFIX schema: <http://schema.org/>"
-      query += " PREFIX dct: <http://purl.org/dc/terms/>"
-      query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
-      query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
-      query += " SELECT ?description"
-      query += " WHERE {"
-      query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
-      query += "     ?invoiceline a crm:Invoiceline ;"
-      query += "       prov:wasDerivedFrom <#{order_uri}> ;"
-      query += "       schema:position ?position ."
-      query += "     OPTIONAL { ?invoiceline dct:description ?description . }"
-      query += "   }"
-      query += " } ORDER BY ?position"
-
-      solutions = Mu.query(query)
+      solutions = fetch_invoicelines(order_id: data['id'])
       deliverylines = solutions.map do |invoiceline|
         line = "<div class='deliveryline'>"
         line += "  <div class='col col-1'>#{invoiceline[:description]}</div>"

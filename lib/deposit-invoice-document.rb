@@ -2,6 +2,7 @@
 require 'wicked_pdf'
 require_relative './htmlentities'
 require_relative './helpers'
+require_relative './sparql_queries'
 
 module DocumentGenerator
   class DepositInvoiceDocument
@@ -156,25 +157,7 @@ module DocumentGenerator
       prices = []
 
       if data['order']
-        order_uri = get_resource_uri('orders', data['order']['id'])
-
-        query = " PREFIX schema: <http://schema.org/>"
-        query += " PREFIX dct: <http://purl.org/dc/terms/>"
-        query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
-        query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
-        query += " SELECT ?description ?amount"
-        query += " WHERE {"
-        query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
-        query += "     ?invoiceline a crm:Invoiceline ;"
-        query += "       prov:wasDerivedFrom <#{order_uri}> ;"
-        query += "       schema:amount ?amount ;"
-        query += "       schema:position ?position ."
-        query += "     OPTIONAL { ?invoiceline dct:description ?description . }"
-        query += "   }"
-        query += " } ORDER BY ?position"
-
-        solutions = Mu.query(query)
-
+        solutions = fetch_invoicelines(order_id: data['order']['id'])
         solutions.each do |invoiceline|
           prices << invoiceline[:amount]
           line = "<div class='invoiceline'>"
