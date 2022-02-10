@@ -167,9 +167,9 @@ module DocumentGenerator
         query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
         query += "     ?invoiceline a crm:Invoiceline ;"
         query += "       prov:wasDerivedFrom <#{order_uri}> ;"
-        query += "       dct:description ?description ;"
         query += "       schema:amount ?amount ;"
         query += "       schema:position ?position ."
+        query += "     OPTIONAL { ?invoiceline dct:description ?description . }"
         query += "   }"
         query += " } ORDER BY ?position"
 
