@@ -121,13 +121,17 @@ module DocumentGenerator
         name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
       end
 
-      telephones = if contact then contact['telephones'] else data['customer']['telephones'] end
-      top_telephones = telephones.find_all { |t| t['telephoneType']['name'] != 'FAX' }.first(2)
+      if contact
+        telephones = fetch_telephones(contact['id'], 'contacts')
+      else
+        telephones = fetch_telephones(data['customer']['dataId'])
+      end
+      top_telephones = telephones.first(2)
 
       contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
       contactlines += "<div class='contactline contactline--telephones'>"
       top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel['country']['telephonePrefix'], tel['area'], tel['number'])
+        formatted_tel = format_telephone(tel[:prefix], tel[:value])
         contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
       end
       contactlines += "</div>"

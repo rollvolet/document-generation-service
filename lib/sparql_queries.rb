@@ -27,10 +27,10 @@ def fetch_telephones(data_id, scope = 'customers')
   solutions.map do |solution|
     {
       uri: solution[:telephone].value,
-      value: solution[:value],
-      position: solution[:position],
-      prefix: solution[:prefix],
-      note: if solution[:note] then solution[:note] end
+      value: solution[:value].value,
+      position: solution[:position].value,
+      prefix: solution[:prefix].value,
+      note: if solution[:note] then solution[:note].value end
     }
   end
 end
@@ -64,10 +64,10 @@ def fetch_offerlines(id)
   solutions.map do |solution|
     {
       uri: solution[:offerline].value,
-      description: if solution[:description] then solution[:description] end,
+      description: if solution[:description] then solution[:description].value end,
       amount: solution[:amount].value.to_f,
       vat_rate: solution[:rate].value.to_i,
-      vat_code: solution[:vatCode]
+      vat_code: solution[:vatCode].value
     }
   end
 end
