@@ -89,20 +89,19 @@ module DocumentGenerator
     end
 
     def generate_visit(data)
-      visit_date = ''
-      visit_time = ''
+      date = ''
+      time = ''
 
-      if data['planningEvent'] and data['planningEvent']['date']
-        visit_date = format_date(data['planningEvent']['date'])
+      calendar_event = fetch_calendar_event(data['id'])
+      if calendar_event
+        date = format_date(calendar_event[:date])
 
-        if data['planningEvent']['subject']
-          subject = data['planningEvent']['subject']
-          subject = subject.split(': ')[1] if subject.include? ': '
-          visit_time = subject.split(data['customer']['name']).first.chop
+        if calendar_event[:subject] and calendar_event[:subject].include? '**'
+          time = calendar_event[:subject].split('**').first.chop
         end
       end
 
-      [visit_date, visit_time]
+      [date, time]
     end
 
     def generate_technicians(data)

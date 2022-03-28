@@ -1,3 +1,31 @@
+def fetch_calendar_event(id, scope = 'interventions')
+  subject_uri = get_resource_uri(scope, id)
+
+  query = " PREFIX ncal: <http://www.semanticdesktop.org/ontologies/2007/04/02/ncal#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " SELECT ?event ?date ?subject"
+  query += " WHERE {"
+  query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+  query += "     ?event a ncal:Event ;"
+  query += "       dct:subject <#{subject_uri}> ;"
+  query += "       ncal:date ?date ;"
+  query += "       ncal:summary ?subject ."
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+
+  events = solutions.map do |solution|
+    {
+      uri: solution[:event].value,
+      date: solution[:date].value,
+      subject: solution[:subject].value
+    }
+  end
+
+  events.first
+end
+
 def fetch_telephones(data_id, scope = 'customers')
   customer_uri = get_resource_uri(scope, data_id)
 
