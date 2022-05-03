@@ -1,6 +1,7 @@
 require 'combine_pdf'
 
 require_relative 'lib/visit-report'
+require_relative 'lib/visit-summary'
 require_relative 'lib/intervention-report'
 require_relative 'lib/offer-document'
 require_relative 'lib/order-document'
@@ -23,6 +24,20 @@ configure :development do
     end
   end
 
+end
+
+post '/documents/visit-summary' do
+  request.body.rewind
+  json_body = JSON.parse request.body.read
+
+  path = "/tmp/#{Mu.generate_uuid}-bezoekrapport.pdf"
+
+  generator = DocumentGenerator::VisitSummary.new
+  generator.generate(path, json_body)
+
+  # TODO cleanup temporary created files of WickedPdf
+
+  send_file path
 end
 
 post '/documents/visit-report' do

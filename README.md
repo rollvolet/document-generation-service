@@ -44,6 +44,8 @@ The following environment variables can be set to configure the absolute path to
 * `CREDIT_NOTE_HEADER_TEMPLATE_NL`: absolute path of the credit note header template in Dutch (default: `/templates/creditnota-header-nl.html`)
 * `CREDIT_NOTE_HEADER_TEMPLATE_FR`: absolute path of the credit note header template in French (default: `/templates/creditnota-header-fr.html`)
 * `VISIT_REPORT_TEMPLATE_NL`: absolute path of the visit report template in Dutch (default: `/templates/bezoekrapport-nl.html`)
+* `VISIT_SUMMARY_TEMPLATE_NL`: absolute path of the visit summary template in Dutch (default: `/templates/bezoek-samenvatting-nl.html`)
+* `VISIT_SUMMARY_ENTRY_TEMPLATE_NL`: absolute path of the visit summary entry template in Dutch (default: `/templates/bezoek-samenvatting-entry-nl.html`)
 * `INTERVENTION_REPORT_TEMPLATE_NL`: absolute path of the intervention report template in Dutch (default: `/templates/interventierapport-nl.html`)
 * `FOOTER_TEMPLATE_NL`: absolute path of the footer template in Dutch (default: `/templates/footer-nl.html`)
 * `FOOTER_TEMPLATE_FR`: absolute path of the footer template in French (default: `/templates/footer-fr.html`)
@@ -61,6 +63,9 @@ All endpoints receive a JSON body containing the data required to fill in the va
 
 ### POST /documents/visit-report
 Generates a visit report (PDF file) for a given customer request. The request body must contain a customer request, including the related customer, contact, building, way-of-entry, language and visit.
+
+### POST /documents/visit-summary
+Generates a visit report (PDF file) for a selection of requests. The request body must contain the requests, including the related customer, contact, building, way-of-entry, language and visit.
 
 ### POST /documents/intervention-report
 Generates an intervention report (PDF file) for a given intervention. The request body must contain an intervention, including the related customer, contact, building, way-of-entry, language and planning venet.
