@@ -58,6 +58,9 @@ module DocumentGenerator
       html.gsub! '<!-- {{TOTAL_VAT_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_vat_deposit_invoice])
       html.gsub! '<!-- {{TOTAL_GROSS_DEPOSIT_INVOICE}} -->', format_decimal(pricing[:total_gross_deposit_invoice])
 
+      outro = coder.encode(data['documentOutro'] || '', :named)
+      html.gsub! '<!-- {{OUTRO}} -->', outro
+
       unless data['isCreditNote']
         if data['paymentDate']
           hide_element('invoiceline.summary.priceline-to-pay')
