@@ -85,18 +85,19 @@ module DocumentGenerator
     end
 
     def generate_visit(data)
-      visit_date = ''
-      visit_time = ''
+      date = ''
+      time = ''
 
-      if data['calendarEvent'] and data['calendarEvent']['visitDate']
-        visit_date = format_date(data['calendarEvent']['visitDate'])
+      calendar_event = fetch_calendar_event(data['id'], scope = 'requests')
+      if calendar_event
+        date = format_date(calendar_event[:date])
 
-        if data['calendarEvent']['calendarSubject']
-          visit_time = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.strip
+        if calendar_event[:subject] and calendar_event[:subject].include? ' | '
+          time = calendar_event[:subject].split(' | ').first.strip
         end
       end
 
-      [visit_date, visit_time]
+      [date, time]
     end
 
     def generate_visitor(data)

@@ -1,6 +1,7 @@
 require 'wicked_pdf'
 require_relative './htmlentities'
 require_relative './helpers'
+require_relative './sparql_queries'
 
 module DocumentGenerator
   class InterventionReport
