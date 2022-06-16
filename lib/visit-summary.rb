@@ -23,11 +23,13 @@ module DocumentGenerator
 
       entries = data.map do |entry|
         request = entry['request']
+        visitor_initials = entry['visitorInitials']
         history = entry['history']
 
         entry = "#{entry_html}" # make a copy of the entry template
 
         request_number = generate_request_number(request)
+        request_number += " #{visitor_initials}" if visitor_initials
         entry.gsub! '<!-- {{NUMBER}} -->', request_number
 
         customer = request['customer']
