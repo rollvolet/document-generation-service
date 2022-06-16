@@ -45,6 +45,8 @@ post '/documents/visit-report' do
   json_body = JSON.parse request.body.read
 
   data = json_body['request']
+  # Workaround to embed visitor initals in the request object
+  data['visitorInitials'] = json_body['visitorInitials']
   history = json_body['history']
   id = data['id']
   path = "/tmp/#{id}-bezoekrapport.pdf"

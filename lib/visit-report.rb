@@ -22,6 +22,7 @@ module DocumentGenerator
       html.gsub! '<!-- {{DATE}} -->', request_date
 
       request_number = generate_request_number(data)
+      request_number += " #{data['visitorInitials']}" if data['visitorInitials']
       html.gsub! '<!-- {{NUMBER}} -->', request_number
 
       way_of_entry = (data['wayOfEntry'] && data['wayOfEntry']['name']) || ''
