@@ -97,7 +97,7 @@ module DocumentGenerator
         date = format_date(calendar_event[:date])
 
         if calendar_event[:subject] and calendar_event[:subject].include? ' | '
-          time = calendar_event[:subject].split(' | ').first.chop
+          time = calendar_event[:subject].split(' | ').first.strip
         end
       end
 

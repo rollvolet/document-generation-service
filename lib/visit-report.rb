@@ -92,7 +92,7 @@ module DocumentGenerator
         visit_date = format_date(data['calendarEvent']['visitDate'])
 
         if data['calendarEvent']['calendarSubject']
-          visit_time = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.chop
+          visit_time = data['calendarEvent']['calendarSubject'].split(data['customer']['name']).first.strip
         end
       end
 
