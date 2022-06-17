@@ -83,6 +83,9 @@ module DocumentGenerator
         history = coder.encode(generate_order_history(history), :named)
         entry.gsub! '<!-- {{ORDER_HISTORY}} -->', history
 
+        description = coder.encode(request['description'] || '', :named)
+        entry.gsub! '<!-- {{DESCRIPTION}} -->', description
+
         entry
       end
 
