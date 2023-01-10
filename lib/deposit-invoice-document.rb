@@ -74,6 +74,7 @@ module DocumentGenerator
         end
 
         hide_element('certificate-notification') unless data['vatRate']['code'] == '6'
+        hide_element('btw-verlegd') unless data['vatRate']['code'] == 'm'
       end
 
       html.sub! '<!-- {{INLINE_CSS}} -->', @inline_css
