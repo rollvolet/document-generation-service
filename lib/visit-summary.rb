@@ -140,14 +140,15 @@ module DocumentGenerator
     end
 
     def generate_customer_entity_email_addresses(customer)
-      emails = []
-      if customer
-        emails = [
-          customer['email'],
-          customer['email2']
-        ].find_all { |a| a }
+      customer_id = if scope == 'customers' then customer['number'] else customer['id'] end
+      emails = fetch_emails(customer_id, scope)
+      top_emails = emails.first(2)
+      formatted_emails = top_emails.collect do |email|
+        address = email[:value]["mailto:".length..-1]
+        note = if email[:note] then "(#{email[:note]})" else '' end
+        "#{address} #{note}"
       end
-      emails.join('<br>')
+      formatted_emails.join('<br>')
     end
 
     def generate_order_history(history)

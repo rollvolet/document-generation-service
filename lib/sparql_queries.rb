@@ -63,6 +63,35 @@ def fetch_telephones(data_id, scope = 'customers')
   end
 end
 
+
+def fetch_emails(data_id, scope = 'customers')
+  customer_uri = get_resource_uri(scope, data_id)
+
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " SELECT ?email ?value ?note"
+  query += " WHERE {"
+  query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+  query += "     ?email a vcard:Email ;"
+  query += "       vcard:hasEmail <#{customer_uri}> ;"
+  query += "       vcard:hasValue ?value ."
+  query += "     OPTIONAL { ?email vcard:hasNote ?note . }"
+  query += "   }"
+  query += " } ORDER BY ?value"
+
+  solutions = Mu.query(query)
+
+  solutions.map do |solution|
+    {
+      uri: solution[:email].value,
+      value: solution[:value].value,
+      note: if solution[:note] then solution[:note].value end
+    }
+  end
+end
+
 def fetch_offerlines(id)
   offer_uri = get_resource_uri('offers', id)
 

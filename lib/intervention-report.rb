@@ -40,13 +40,13 @@ module DocumentGenerator
       customer = coder.encode(generate_customer(data), :named)
       html.gsub! '<!-- {{CUSTOMER}} -->', customer
 
-      customer_email_address = generate_customer_email_address(data)
+      customer_email_address = generate_customer_entity_email_addresses(data['customer'], 'customers')
       html.gsub! '<!-- {{CUSTOMER_EMAIL_ADDRESS}} -->', customer_email_address
 
       contactlines = coder.encode(generate_contact(data), :named)
       html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
 
-      contact_email_address = generate_contact_email_address(data)
+      contact_email_address = generate_customer_entity_email_addresses(data['contact'], 'contacts')
       html.gsub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address
 
       vat_number = generate_vat_number(data)
@@ -207,22 +207,17 @@ module DocumentGenerator
       end
     end
 
-    def generate_customer_email_address(data)
-      emails = []
-      if data['customer']
-        emails = [ data['customer']['email'], data['customer']['email2'] ].find_all { |a| a }
+    def generate_customer_entity_email_addresses(customer, scope)
+      customer_id = if scope == 'customers' then customer['number'] else customer['id'] end
+      emails = fetch_emails(customer_id, scope)
+      top_emails = emails.first(2)
+      formatted_emails = top_emails.collect do |email|
+        address = email[:value]["mailto:".length..-1]
+        note = if email[:note] then "(#{email[:note]})" else '' end
+        "#{address} #{note}"
       end
 
-      if emails.length > 0 then emails.join(', ') else hide_element('email--customer') end
-    end
-
-    def generate_contact_email_address(data)
-      emails = []
-      if data['contact']
-        emails = [ data['contact']['email'], data['contact']['email2'] ].find_all { |a| a }
-      end
-
-      if emails.length > 0 then emails.join(', ') else hide_element('email--contact') end
+      if formatted_emails.length > 0 then formatted_emails.join(', ') else hide_element("email--#{scope}") end
     end
 
     def generate_employee_name(data)
