@@ -168,12 +168,20 @@ module DocumentGenerator
         name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
         name += " #{honorific_prefix['name']}" if honorific_prefix and not building['printInFront']
 
+        telephones = fetch_telephones(building['id'], 'buildings')
+        top_telephones = telephones.first(2)
+
+        formatted_telephones = top_telephones.collect do |tel|
+          format_telephone(tel[:prefix], tel[:value])
+        end
+
         [ name,
           building['address1'],
           building['address2'],
           building['address3'],
-          "#{building['postalCode']} #{building['city']}"
-        ].find_all { |a| a and a != "" }.join('<br>')
+          "#{building['postalCode']} #{building['city']}",
+          formatted_telephones
+        ].flatten.find_all { |a| a and a != "" }.join('<br>')
       else
         hide_element('table .col .building-address')
       end
