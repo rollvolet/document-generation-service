@@ -112,7 +112,7 @@ module DocumentGenerator
 
       result = "#{name}<br>#{address}"
 
-      telephones = generate_telephones(customer['dataId'], 'customers', '; ')
+      telephones = generate_telephones(customer['number'], 'customers', '; ')
       result += "<br>#{telephones}" if telephones.length
 
       result

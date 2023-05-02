@@ -128,7 +128,7 @@ module DocumentGenerator
     end
 
     def generate_customer_entity_telephones(customer, scope = 'customers')
-      customer_id = if scope == 'customers' then customer['dataId'] else customer['id'] end
+      customer_id = if scope == 'customers' then customer['number'] else customer['id'] end
       telephones = fetch_telephones(customer_id, scope)
       top_telephones = telephones.first(2)
       formatted_telephones = top_telephones.collect do |tel|

@@ -124,7 +124,7 @@ module DocumentGenerator
       if contact
         telephones = fetch_telephones(contact['id'], 'contacts')
       else
-        telephones = fetch_telephones(data['customer']['dataId'])
+        telephones = fetch_telephones(data['customer']['number'])
       end
       top_telephones = telephones.first(2)
 

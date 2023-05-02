@@ -136,7 +136,7 @@ module DocumentGenerator
         "#{customer['postalCode']} #{customer['city']}"
       ].find_all { |a| a }.join('<br>')
 
-      telephones = fetch_telephones(customer['dataId'])
+      telephones = fetch_telephones(customer['number'])
       top_telephones = telephones.first(2)
 
       contactlines = "<div class='contactline contactline--name'>#{name}</div>"
