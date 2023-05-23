@@ -129,7 +129,7 @@ def fetch_offerlines(id)
   end
 end
 
-def fetch_invoicelines(order_id: nil, invoice_id: nil)
+def fetch_invoicelines(order_id: nil, invoice_uri: nil)
   order_statement = ''
   if (order_id)
     order_uri = get_resource_uri('orders', order_id)
@@ -137,9 +137,8 @@ def fetch_invoicelines(order_id: nil, invoice_id: nil)
   end
 
   invoice_statement = ''
-  if (invoice_id)
-    invoice_uri = get_resource_uri('invoices', invoice_id)
-    invoice_statement = "?invoiceline dct:isPartOf <#{invoice_uri}> ."
+  if (invoice_uri)
+    invoice_statement = "<#{invoice_uri}> p2poInvoice:hasInvoiceLine ?invoiceline."
   end
 
   query = " PREFIX schema: <http://schema.org/>"
@@ -147,6 +146,7 @@ def fetch_invoicelines(order_id: nil, invoice_id: nil)
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
   query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
+  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
   query += " SELECT ?invoiceline ?description ?amount ?rate ?vatCode"
   query += " WHERE {"
   query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
@@ -175,5 +175,121 @@ def fetch_invoicelines(order_id: nil, invoice_id: nil)
       vat_rate: solution[:rate].value.to_i,
       vat_code: solution[:vatCode]
     }
+  end
+end
+
+def fetch_invoice(invoice_id)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+  query += " PREFIX p2poPrice: <https://purl.org/p2p-o/price#>"
+  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " SELECT ?invoice ?date ?type ?number ?amount ?rate ?vatCode ?dueDate ?paymentDate ?paidDeposits ?outro ?reference"
+  query += " WHERE {"
+  query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+  query += "     ?invoice a p2poInvoice:E-FinalInvoice ;"
+  query += "       mu:uuid #{invoice_id.sparql_escape} ;"
+  query += "       p2poInvoice:dateOfIssue ?date ;"
+  query += "       p2poInvoice:invoiceNumber ?number ;"
+  query += "       p2poInvoice:hasTotalLineNetAmount ?amount ."
+  query += "     OPTIONAL { ?invoice dct:type ?type . }"
+  query += "     OPTIONAL { ?invoice p2poInvoice:paymentDueDate ?dueDate . }"
+  query += "     OPTIONAL { ?invoice crm:paymentDate ?paymentDate . }"
+  query += "     OPTIONAL { ?invoice crm:paidDeposits ?paidDeposits . }"
+  query += "     OPTIONAL { ?invoice p2poInvoice:paymentTerms ?outro . }"
+  query += "     ?case dossier:Dossier.bestaatUit ?invoice ;"
+  query += "       p2poPrice:hasVATCategoryCode ?vatRate ."
+  query += "     OPTIONAL { ?case frapo:hasReferenceNumber ?reference . }"
+  query += "   }"
+  query += "   GRAPH <http://mu.semte.ch/graphs/public> {"
+  query += "     ?vatRate a price:VatRate ;"
+  query += "       schema:value ?rate ;"
+  query += "       schema:identifier ?vatCode ."
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+  solution = solutions.first
+  if solution
+    {
+      id: invoice_id,
+      uri: solution[:invoice].value,
+      is_credit_note: solution[:type]&.value == 'https://purl.org/p2p-o/invoice#E-CreditNote',
+      invoice_date: solution[:date].value,
+      number: solution[:number].value,
+      amount: solution[:amount].value.to_f,
+      due_date: solution[:dueDate]&.value,
+      payment_date: solution[:paymentDate]&.value,
+      paid_deposits: solution[:paidDeposits]&.value.to_f,
+      vat_rate: solution[:rate].value.to_i,
+      vat_code: solution[:vatCode],
+      outro: solution[:outro]&.value,
+      reference: solution[:reference]&.value
+    }
+  else
+    nil
+  end
+end
+
+def fetch_deposit_invoices_for_invoice(invoice_id)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
+  query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+  query += " PREFIX p2poPrice: <https://purl.org/p2p-o/price#>"
+  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
+  query += " SELECT ?depositInvoice ?type ?number ?amount"
+  query += " WHERE {"
+  query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+  query += "     ?depositInvoice a p2poInvoice:E-PrePaymentInvoice ;"
+  query += "       p2poInvoice:invoiceNumber ?number ;"
+  query += "       p2poInvoice:hasTotalLineNetAmount ?amount ."
+  query += "     OPTIONAL { ?depositInvoice dct:type ?type . }"
+  query += "     ?case dossier:Dossier.bestaatUit ?depositInvoice, ?invoice ."
+  query += "     ?invoice a p2poInvoice:E-FinalInvoice ;"
+  query += "       mu:uuid #{invoice_id.sparql_escape} ."
+  query += "   }"
+  query += " } ORDER BY ?number"
+
+  solutions = Mu.query(query)
+
+  solutions.map do |solution|
+    {
+      uri: solution[:depositInvoice].value,
+      is_credit_note: solution[:type]&.value == 'https://purl.org/p2p-o/invoice#E-CreditNote',
+      number: solution[:number].value,
+      amount: solution[:amount].value.to_f
+    }
+  end
+end
+
+def fetch_employee_by_name(name)
+  query = " PREFIX person: <http://www.w3.org/ns/person#>"
+  query += " PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " SELECT ?employee ?initials"
+  query += " WHERE {"
+  query += "   GRAPH <http://mu.semte.ch/graphs/rollvolet> {"
+  query += "     ?employee a person:Person ;"
+  query += "       foaf:firstName ?firstName ."
+  query += "     FILTER(LCASE(?firstName) = #{name.downcase.sparql_escape})"
+  query += "     OPTIONAL { ?employee frapo:initial ?initials . }"
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+  solution = solutions.first
+  if solution
+    {
+      uri: solution[:employee].value,
+      initials: solution[:initials].value
+    }
+  else
+    nil
   end
 end

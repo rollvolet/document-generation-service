@@ -141,6 +141,8 @@ module DocumentGenerator
     def generate_ext_reference(data)
       if data['reference']
         data['reference']
+      elsif data[:reference]
+        data[:reference]
       else
         hide_element('references--ext_reference')
         hide_element('row--ext-reference')
@@ -150,7 +152,7 @@ module DocumentGenerator
     end
 
     def generate_invoice_number(data)
-      number = data['number'].to_s || ''
+      number = data[:number].to_s || ''
       if number.length > 4
         i = number.length - 4
         "#{number[0..i-1]}/#{number[i..-1]}"
@@ -164,7 +166,8 @@ module DocumentGenerator
     end
 
     def generate_invoice_date(data)
-      if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
+      invoice_date = data['invoiceDate'] || data[:invoice_date]
+      if invoice_date then format_date(invoice_date) else '' end
     end
 
     def generate_request_date(data)

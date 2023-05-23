@@ -185,20 +185,18 @@ post '/documents/production-ticket-watermark' do
   end
 end
 
-post '/documents/invoice' do
+post '/invoices/:id/documents' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  # Workaround to embed visitor initals in the invoice object
-  data = json_body['invoice']
-  data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
+  id = params['id']
+  data = json_body['data']
+  language = data['attributes']['language']
 
-  id = data['id']
-  path = "/tmp/#{id}-factuur.pdf"
+  generator = DocumentGenerator::InvoiceDocument.new id: id, language: language
+  path = generator.generate(data)
 
-  generator = DocumentGenerator::InvoiceDocument.new
-  generator.generate(path, data)
-
+  # TODO write nfo:FileDataObject to triplestore
   # TODO cleanup temporary created files of WickedPdf
 
   send_file path
