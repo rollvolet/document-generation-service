@@ -138,6 +138,48 @@ module DocumentGenerator
       contactlines
     end
 
+    def generate_embedded_address(record, address, hide_class = nil)
+      if record
+        addresslines = "#{record['attributes']['name']}<br>"
+        if address
+          if address['attributes']['street']
+            streetlines = address['attributes']['street'].gsub(/\n/, '<br>')
+            addresslines += "#{streetlines}<br>"
+          end
+          addresslines += "#{address['attributes']['postal-code']} #{address['attributes']['city']}" if address['attributes']['postal-code'] or address['attributes']['city']
+        end
+        addresslines
+      elsif hide_class
+        hide_element(hide_class)
+      end
+    end
+
+    def generate_embedded_contactlines(customer, contact)
+      vat_number = customer['attributes']['vat-number']
+      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
+
+      if contact
+        name = "Contact: #{contact['attributes']['name']}"
+        contactlines += "<div class='contactline contactline--name'>#{name}</div>"
+      end
+
+      contactlines += "<div class='contactline contactline--telephones'>"
+      if contact
+        telephones = fetch_telephones(contact['id'], 'contacts')
+      else
+        telephones = fetch_telephones(customer['attributes']['number'])
+      end
+      top_telephones = telephones.first(2)
+
+      top_telephones.each do |tel|
+        formatted_tel = format_telephone(tel[:prefix], tel[:value])
+        contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
+      end
+      contactlines += "</div>"
+
+      contactlines
+    end
+
     def generate_ext_reference(data)
       if data['reference']
         data['reference']
@@ -168,6 +210,15 @@ module DocumentGenerator
     def generate_invoice_date(data)
       invoice_date = data['invoiceDate'] || data[:invoice_date]
       if invoice_date then format_date(invoice_date) else '' end
+    end
+
+    def generate_payment_due_date(invoice)
+      if invoice[:due_date]
+        format_date(invoice[:due_date])
+      else
+        hide_element('payment-notification--deadline')
+        ''
+      end
     end
 
     def generate_request_date(data)

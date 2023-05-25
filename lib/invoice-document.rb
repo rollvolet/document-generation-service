@@ -130,60 +130,9 @@ module DocumentGenerator
       end
     end
 
-    def generate_embedded_address(record, address, hide_class = nil)
-      if record
-        addresslines = "#{record['attributes']['name']}<br>"
-        if address
-          if address['attributes']['street']
-            streetlines = address['attributes']['street'].gsub(/\n/, '<br>')
-            addresslines += "#{streetlines}<br>"
-          end
-          addresslines += "#{address['attributes']['postal-code']} #{address['attributes']['city']}" if address['attributes']['postal-code'] or address['attributes']['city']
-        end
-        addresslines
-      elsif hide_class
-        hide_element(hide_class)
-      end
-    end
-
-    def generate_embedded_contactlines(customer, contact)
-      vat_number = customer['attributes']['vat-number']
-      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
-
-      if contact
-        name = "Contact: #{contact['attributes']['name']}"
-        contactlines += "<div class='contactline contactline--name'>#{name}</div>"
-      end
-
-      contactlines += "<div class='contactline contactline--telephones'>"
-      if contact
-        telephones = fetch_telephones(contact['id'], 'contacts')
-      else
-        telephones = fetch_telephones(customer['attributes']['number'])
-      end
-      top_telephones = telephones.first(2)
-
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel[:prefix], tel[:value])
-        contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
-      end
-      contactlines += "</div>"
-
-      contactlines
-    end
-
     def generate_bank_reference(invoice)
       base = if invoice[:is_credit_note] then 8000000000 else 0 end
       generate_bank_reference_with_base(base, invoice[:number].to_i)
-    end
-
-    def generate_payment_due_date(invoice)
-      if invoice[:due_date]
-        format_date(invoice[:due_date])
-      else
-        hide_element('payment-notification--deadline')
-        ''
-      end
     end
 
     def generate_pricing(invoice)
@@ -204,8 +153,7 @@ module DocumentGenerator
       deposit_invoices = fetch_deposit_invoices_for_invoice(invoice[:id])
       deposit_invoice_amounts = deposit_invoices.map do |d|
         amount = d[:amount] || 0
-        is_credit_note = d[:is_credit_note] == 'https://purl.org/p2p-o/invoice#E-CreditNote'
-        if is_credit_note then amount * -1.0 else amount end
+        if d[:is_credit_note] then amount * -1.0 else amount end
       end
       deposit_invoice_numbers = deposit_invoices.map { |d| generate_invoice_number(d) }
 
