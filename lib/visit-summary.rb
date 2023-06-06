@@ -50,7 +50,7 @@ module DocumentGenerator
           entry.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
           building_telephones = coder.encode(generate_customer_entity_telephones(building, 'buildings'), :named)
           entry.gsub! '<!-- {{BUILDING_TELEPHONES}} -->', building_telephones
-          building_email = coder.encode(generate_customer_entity_email_addresses(building), :named)
+          building_email = coder.encode(generate_customer_entity_email_addresses(building, 'buildings'), :named)
           entry.gsub! '<!-- {{BUILDING_EMAIL_ADDRESSES}} -->', building_email
         end
 
@@ -62,7 +62,7 @@ module DocumentGenerator
           entry.gsub! '<!-- {{CONTACT_ADDRESS}} -->', contact_address
           contact_telephones = coder.encode(generate_customer_entity_telephones(contact, 'contacts'), :named)
           entry.gsub! '<!-- {{CONTACT_TELEPHONES}} -->', contact_telephones
-          contact_email = coder.encode(generate_customer_entity_email_addresses(contact), :named)
+          contact_email = coder.encode(generate_customer_entity_email_addresses(contact, 'contacts'), :named)
           entry.gsub! '<!-- {{CONTACT_EMAIL_ADDRESSES}} -->', contact_email
         end
 
@@ -139,7 +139,7 @@ module DocumentGenerator
       formatted_telephones.join('<br>')
     end
 
-    def generate_customer_entity_email_addresses(customer)
+    def generate_customer_entity_email_addresses(customer, scope = 'customers')
       customer_id = if scope == 'customers' then customer['number'] else customer['id'] end
       emails = fetch_emails(customer_id, scope)
       top_emails = emails.first(2)
