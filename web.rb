@@ -1,4 +1,5 @@
 require 'combine_pdf'
+require 'facets'
 
 require_relative 'lib/visit-report'
 require_relative 'lib/visit-summary'
@@ -40,19 +41,12 @@ post '/documents/visit-summary' do
   send_file path
 end
 
-post '/documents/visit-report' do
+post '/requests/:id/documents' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  data = json_body['request']
-  # Workaround to embed visitor initals in the request object
-  data['visitorInitials'] = json_body['visitorInitials']
-  history = json_body['history']
-  id = data['id']
-  path = "/tmp/#{id}-bezoekrapport.pdf"
-
-  generator = DocumentGenerator::VisitReport.new
-  generator.generate(path, data, history)
+  generator = DocumentGenerator::VisitReport.new id: params['id']
+  path = generator.generate
 
   # TODO cleanup temporary created files of WickedPdf
 

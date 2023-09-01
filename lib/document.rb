@@ -7,8 +7,10 @@ module DocumentGenerator
     include DocumentGenerator::Helpers
     include DocumentGenerator::JsonApiHelpers
 
-    def initialize id:, language:
+    def initialize id:, language: nil
       @inline_css = ''
+      @header = ''
+      @footer = ''
       @language = language
       @resource_id = id
       @path = "/tmp/#{id}.pdf"

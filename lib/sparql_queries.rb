@@ -1,3 +1,265 @@
+def fetch_customer_by_case(case_uri)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " SELECT ?uri ?type ?number ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?vat_number ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
+  query += " WHERE {"
+  query += "   #{Mu.sparql_escape_uri(case_uri)} schema:customer ?uri ."
+  query += "   ?uri a vcard:VCard ;"
+  query += "     dct:type ?type ;"
+  query += "     vcard:hasUID ?number ."
+  query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
+  query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasFamilyName ?last_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasHonorificSuffix ?suffix . }"
+  query += "   OPTIONAL { ?uri crm:printPrefix ?print_prefix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffix ?print_suffix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffixInFront ?print_suffix_in_front . }"
+  query += "   OPTIONAL { ?uri schema:vatID ?vat_number . }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasLanguage ?language . "
+  query += "     ?language schema:name ?language_name ; "
+  query += "       schema:identifier ?language_code . "
+  query += "   }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasAddress ?address . "
+  query += "     OPTIONAL { ?address vcard:hasStreetAddress ?street . }"
+  query += "     OPTIONAL { ?address vcard:hasPostalCode ?postal_code . }"
+  query += "     OPTIONAL { ?address vcard:hasLocality ?city . }"
+  query += "     OPTIONAL { ?address vcard:hasCountryName/schema:name ?country . }"
+  query += "   }"
+  query += " } LIMIT 1"
+
+
+  solutions = Mu.query(query)
+
+  customers = solutions.map do |solution|
+    if solution[:language]
+      language = {
+        uri: solution[:language]&.value,
+        name: solution[:language_name]&.value,
+        code: solution[:language_code]&.value
+      }
+    end
+    if solution[:address]
+      address = {
+        uri: solution[:address]&.value,
+        street: solution[:street]&.value,
+        postal_code: solution[:postal_code]&.value,
+        city: solution[:city]&.value,
+        country: solution[:country]&.value
+      }
+    end
+    {
+      uri: solution[:uri].value,
+      type: solution[:type].value,
+      number: solution[:number].value,
+      honorific_prefix: solution[:hon_prefix]&.value,
+      first_name: solution[:first_name]&.value,
+      last_name: solution[:last_name]&.value,
+      suffix: solution[:suffix]&.value,
+      print_prefix: solution[:print_prefix]&.value.to_b,
+      print_suffix: solution[:print_suffix]&.value.to_b,
+      print_suffix_in_front: solution[:print_suffix_in_front]&.value.to_b,
+      vat_number: solution[:vat_number]&.value,
+      language: language,
+      address: address
+    }
+  end
+
+  customers.first
+end
+
+def fetch_contact_by_case(case_uri)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX nco: <http://www.semanticdesktop.org/ontologies/2007/03/22/nco#>"
+  query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
+  query += " WHERE {"
+  query += "   #{Mu.sparql_escape_uri(case_uri)} crm:contact ?uri ."
+  query += "   ?uri a nco:Contact ."
+  query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
+  query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasFamilyName ?last_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasHonorificSuffix ?suffix . }"
+  query += "   OPTIONAL { ?uri crm:printPrefix ?print_prefix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffix ?print_suffix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffixInFront ?print_suffix_in_front . }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasLanguage ?language . "
+  query += "     ?language schema:name ?language_name ; "
+  query += "       schema:identifier ?language_code . "
+  query += "   }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasAddress ?address . "
+  query += "     OPTIONAL { ?address vcard:hasStreetAddress ?street . }"
+  query += "     OPTIONAL { ?address vcard:hasPostalCode ?postal_code . }"
+  query += "     OPTIONAL { ?address vcard:hasLocality ?city . }"
+  query += "     OPTIONAL { ?address vcard:hasCountryName/schema:name ?country . }"
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+
+  contacts = solutions.map do |solution|
+    if solution[:language]
+      language = {
+        uri: solution[:language]&.value,
+        name: solution[:language_name]&.value,
+        code: solution[:language_code]&.value
+      }
+    end
+    if solution[:address]
+      address = {
+        uri: solution[:address]&.value,
+        street: solution[:street]&.value,
+        postal_code: solution[:postal_code]&.value,
+        city: solution[:city]&.value,
+        country: solution[:country]&.value
+      }
+    end
+    {
+      uri: solution[:uri].value,
+      honorific_prefix: solution[:hon_prefix]&.value,
+      first_name: solution[:first_name]&.value,
+      last_name: solution[:last_name]&.value,
+      suffix: solution[:suffix]&.value,
+      print_prefix: solution[:print_prefix]&.value.to_b,
+      print_suffix: solution[:print_suffix]&.value.to_b,
+      print_suffix_in_front: solution[:print_suffix_in_front]&.value.to_b,
+      language: language,
+      address: address
+    }
+  end
+
+  contacts.first
+end
+
+def fetch_building_by_case(case_uri)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX gebouw: <https://data.vlaanderen.be/ns/gebouw#>"
+  query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
+  query += " WHERE {"
+  query += "   #{Mu.sparql_escape_uri(case_uri)} crm:building ?uri ."
+  query += "   ?uri a gebouw:Gebouw ."
+  query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
+  query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasFamilyName ?last_name . }"
+  query += "   OPTIONAL { ?uri vcard:hasHonorificSuffix ?suffix . }"
+  query += "   OPTIONAL { ?uri crm:printPrefix ?print_prefix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffix ?print_suffix . }"
+  query += "   OPTIONAL { ?uri crm:printSuffixInFront ?print_suffix_in_front . }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasLanguage ?language . "
+  query += "     ?language schema:name ?language_name ; "
+  query += "       schema:identifier ?language_code . "
+  query += "   }"
+  query += "   OPTIONAL { "
+  query += "     ?uri vcard:hasAddress ?address . "
+  query += "     OPTIONAL { ?address vcard:hasStreetAddress ?street . }"
+  query += "     OPTIONAL { ?address vcard:hasPostalCode ?postal_code . }"
+  query += "     OPTIONAL { ?address vcard:hasLocality ?city . }"
+  query += "     OPTIONAL { ?address vcard:hasCountryName/schema:name ?country . }"
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+
+  buildings = solutions.map do |solution|
+    if solution[:language]
+      language = {
+        uri: solution[:language]&.value,
+        name: solution[:language_name]&.value,
+        code: solution[:language_code]&.value
+      }
+    end
+    if solution[:address]
+      address = {
+        uri: solution[:address]&.value,
+        street: solution[:street]&.value,
+        postal_code: solution[:postal_code]&.value,
+        city: solution[:city]&.value,
+        country: solution[:country]&.value
+      }
+    end
+    {
+      uri: solution[:uri].value,
+      honorific_prefix: solution[:hon_prefix]&.value,
+      first_name: solution[:first_name]&.value,
+      last_name: solution[:last_name]&.value,
+      suffix: solution[:suffix]&.value,
+      print_prefix: solution[:print_prefix]&.value.to_b,
+      print_suffix: solution[:print_suffix]&.value.to_b,
+      print_suffix_in_front: solution[:print_suffix_in_front]&.value.to_b,
+      language: language,
+      address: address
+    }
+  end
+
+  buildings.first
+end
+
+def fetch_request(id)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
+  query += " PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+  query += " SELECT ?uri ?date ?number ?visitor ?visitor_name ?visitor_initials ?employee ?way_of_entry ?case ?description"
+  query += " WHERE {"
+  query += "   ?uri a crm:Request ;"
+  query += "     mu:uuid #{id.sparql_escape} ;"
+  query += "     dct:issued ?date ;"
+  query += "     schema:identifier ?number ."
+  query += "   ?case ext:request ?uri ."
+  query += "   OPTIONAL { "
+  query += "     ?uri crm:visitor ?visitor . "
+  query += "     ?visitor foaf:firstName ?visitor_name ; "
+  query += "       frapo:initial ?visitor_initials . "
+  query += "   }"
+  query += "   OPTIONAL { ?uri crm:employee/foaf:firstName ?employee . }"
+  query += "   OPTIONAL { ?uri crm:wayOfEntry/skos:prefLabel ?way_of_entry . }"
+  query += "   OPTIONAL { ?uri dct:description ?description . }"
+  query += " } LIMIT 1"
+
+  solutions = Mu.query(query)
+
+  requests = solutions.map do |solution|
+    if solution[:visitor]
+      visitor = {
+        uri: solution[:visitor].value,
+        name: solution[:visitor_name]&.value,
+        initials: solution[:visitor_initials]&.value
+      }
+    end
+    {
+      uri: solution[:uri].value,
+      date: solution[:date].value,
+      number: solution[:number].value,
+      visitor: visitor,
+      employee: solution[:employee]&.value,
+      way_of_entry: solution[:way_of_entry]&.value,
+      description: solution[:description]&.value,
+      case_uri: solution[:case].value
+    }
+  end
+
+  requests.first
+end
+
 def fetch_calendar_event(id, scope = 'interventions')
   subject_uri = get_resource_uri(scope, id)
 
@@ -24,9 +286,7 @@ def fetch_calendar_event(id, scope = 'interventions')
   events.first
 end
 
-def fetch_telephones(data_id, scope = 'customers')
-  customer_uri = get_resource_uri(scope, data_id)
-
+def fetch_telephones(customer_uri)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
@@ -58,9 +318,7 @@ def fetch_telephones(data_id, scope = 'customers')
 end
 
 
-def fetch_emails(data_id, scope = 'customers')
-  customer_uri = get_resource_uri(scope, data_id)
-
+def fetch_emails(customer_uri)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
@@ -268,5 +526,38 @@ def fetch_employee_by_name(name)
     }
   else
     nil
+  end
+end
+
+def fetch_recent_offers(customer_uri, case_uri)
+  query = "PREFIX schema: <http://schema.org/>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " SELECT ?offer ?request_number ?offer_date ?visitor ?order"
+  query += " WHERE {"
+  query += "   #{Mu.sparql_escape_uri(customer_uri)} a vcard:VCard ."
+  query += "   ?case schema:customer #{Mu.sparql_escape_uri(customer_uri)} ;"
+  query += "     ext:request ?request ;"
+  query += "     ext:offer ?offer ."
+  query += "   ?offer dct:issued ?offer_date ."
+  query += "   ?request schema:identifier ?request_number ."
+  query += "   OPTIONAL { ?request crm:visitor/frapo:initial ?visitor .}"
+  query += "   OPTIONAL { ?case ext:order ?order . }"
+  query += "   FILTER (?case != #{Mu.sparql_escape_uri(case_uri)})"
+  query += " } ORDER BY DESC(?offer_date) LIMIT 5"
+
+  solutions = Mu.query(query)
+
+  solutions.map do |solution|
+    {
+      uri: solution[:offer].value,
+      number: solution[:request_number].value,
+      date: DateTime.parse(solution[:offer_date].value),
+      visitor: solution[:visitor]&.value,
+      is_ordered: !solution[:order].nil?
+    }
   end
 end
