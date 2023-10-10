@@ -43,7 +43,7 @@ post '/documents/visit-summary' do
 end
 
 post '/requests/:id/documents' do
-  generator = DocumentGenerator::VisitReport.new id: params['id']
+  generator = DocumentGenerator::VisitReport.new id: params['id'], user: @user
   path = generator.generate
 
   send_file path

@@ -446,9 +446,7 @@ def fetch_invoice(invoice_id)
   end
 end
 
-def fetch_calendar_event(id, scope = 'interventions')
-  subject_uri = get_resource_uri(scope, id)
-
+def fetch_calendar_event(subject_uri)
   query = %{
     PREFIX ncal: <http://www.semanticdesktop.org/ontologies/2007/04/02/ncal#>
     PREFIX dct: <http://purl.org/dc/terms/>
@@ -473,15 +471,15 @@ def fetch_calendar_event(id, scope = 'interventions')
   events.first
 end
 
-def fetch_telephones(customer_uri)
-  query = %{
+def fetch_telephones(record_uri)
+  solutions = Mu::query %{
     PREFIX schema: <http://schema.org/>
     PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>
     PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>
     PREFIX dct: <http://purl.org/dc/terms/>
     SELECT ?telephone ?value ?position ?prefix ?note
     WHERE {
-      #{Mu::sparql_escape_uri(customer_uri)} vcard:hasTelephone ?telephone .
+      #{Mu::sparql_escape_uri(record_uri)} vcard:hasTelephone ?telephone .
       ?telephone a vcard:Telephone ;
         vcard:hasValue ?value ;
         vcard:hasCountryName ?country ;
@@ -492,7 +490,6 @@ def fetch_telephones(customer_uri)
       OPTIONAL { ?telephone vcard:hasNote ?note . }
     } ORDER BY ?position
   }
-  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -500,25 +497,39 @@ def fetch_telephones(customer_uri)
       value: solution[:value].value,
       position: solution[:position].value,
       prefix: solution[:prefix].value,
-      note: if solution[:note] then solution[:note].value end
+      note: solution[:note]&.value
     }
   end
 end
 
 
-def fetch_emails(customer_uri)
-  query = %{
+def fetch_emails(record_uri)
+  solutions = Mu::query %{
     PREFIX schema: <http://schema.org/>
     PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>
     PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>
     PREFIX dct: <http://purl.org/dc/terms/>
     SELECT ?email ?value ?note
     WHERE {
-      #{Mu::sparql_escape_uri(customer_uri)} vcard:hasEmail ?email .
+      #{Mu::sparql_escape_uri(record_uri)} vcard:hasEmail ?email .
       ?email a vcard:Email ;
         vcard:hasValue ?value .
       OPTIONAL { ?email vcard:hasNote ?note . }
     } ORDER BY ?value
+  }
+
+  solutions.map do |solution|
+    {
+      uri: solution[:email].value,
+      value: solution[:value].value,
+      note: solution[:note]&.value
+    }
+  end
+end
+
+def fetch_offerlines(id)
+  offer_uri = get_resource_uri('offers', id)
+  query = %{
     PREFIX schema: <http://schema.org/>
     PREFIX dct: <http://purl.org/dc/terms/>
     PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>

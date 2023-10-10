@@ -89,22 +89,6 @@ module DocumentGenerator
       data['id'].to_s
     end
 
-    def generate_visit(data)
-      date = ''
-      time = ''
-
-      calendar_event = fetch_calendar_event(data['id'])
-      if calendar_event
-        date = format_date(calendar_event[:date])
-
-        if calendar_event[:subject] and calendar_event[:subject].include? ' | '
-          time = calendar_event[:subject].split(' | ').first.strip
-        end
-      end
-
-      [date, time]
-    end
-
     def generate_technicians(data)
       if data['technicians']
         data['technicians'].map { |t| t['firstName'] }.join(', ')

@@ -71,7 +71,7 @@ module DocumentGenerator
       addresslines = generate_address(customer)
       fill_placeholder('ADDRESSLINES', addresslines, encode: true)
 
-      contactlines = generate_contactlines(customer, contact)
+      contactlines = generate_contactlines(customer: customer, contact: contact)
       fill_placeholder('CONTACTLINES', contactlines, encode: true)
 
       fill_placeholder('OUTRO', invoice[:outro] || '', encode: true)

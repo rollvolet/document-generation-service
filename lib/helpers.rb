@@ -84,16 +84,27 @@ module DocumentGenerator
       end
     end
 
-    def generate_contactlines(customer, contact)
+    def generate_contactlines(customer: nil, contact: nil, address: nil)
       contactlines =
-        if customer[:vat_number]
+        if customer and customer[:vat_number]
         then "<div class='contactline contactline--vat-number'>#{format_vat_number(customer[:vat_number])}</div>"
         else ''
         end
 
       if contact
-        name = "Contact: #{generate_print_name(contact)}"
+        print_name = generate_print_name(contact)
+        name = if customer then "Contact: #{print_name}" else print_name end
         contactlines += "<div class='contactline contactline--name'>#{name}</div>"
+      elsif customer
+        contactlines += "<div class='contactline contactline--name'>#{generate_print_name(customer)}</div>"
+      end
+
+      if address
+        addresslines = [
+          address[:street],
+          "#{address[:postal_code]} #{address[:city]}"
+        ].find_all { |a| a }.map { |a| a.gsub(/\n/, '<br>') }.join('<br>')
+        contactlines += "<div class='contactline contactline--address'>#{addresslines}</div>" if addresslines
       end
 
       contactlines += "<div class='contactline contactline--telephones'>"
@@ -101,11 +112,28 @@ module DocumentGenerator
       top_telephones = telephones.first(2)
       top_telephones.each do |tel|
         formatted_tel = format_telephone(tel[:prefix], tel[:value])
+        note = if tel[:note] then "(#{tel[:note]})" else '' end
         contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
       end
       contactlines += "</div>"
 
       contactlines
+    end
+
+    def generate_email_addresses(record_uri)
+      if record_uri.nil?
+        formatted_emails = []
+      else
+        emails = fetch_emails(record_uri)
+        top_emails = emails.first(2)
+        formatted_emails = top_emails.collect do |email|
+          address = email[:value]["mailto:".length..-1]
+          note = if email[:note] then "(#{email[:note]})" else '' end
+          "#{address} #{note}"
+        end
+      end
+
+      formatted_emails
     end
 
     def generate_own_reference(request, intervention)
@@ -133,6 +161,30 @@ module DocumentGenerator
       end
     end
 
+    def generate_visit(record_uri)
+      date = ''
+      time = ''
+
+      calendar_event = fetch_calendar_event(record_uri)
+      if calendar_event
+        date = format_date(calendar_event[:date])
+
+        if calendar_event[:subject] and calendar_event[:subject].include? ' | '
+          time = calendar_event[:subject].split(' | ').first.strip
+        end
+      end
+
+      [date, time]
+    end
+
+    def generate_request_number(data)
+      format_request_number(data['id'].to_s)
+    end
+
+    def generate_request_date(data)
+      if data['requestDate'] then format_date(data['requestDate']) else '' end
+    end
+
     def generate_invoice_number(data)
       number = data[:number].to_s || ''
       if number.length > 4
@@ -141,10 +193,6 @@ module DocumentGenerator
       else
         number
       end
-    end
-
-    def generate_request_number(data)
-      format_request_number(data['id'].to_s)
     end
 
     def generate_invoice_date(data)
@@ -159,10 +207,6 @@ module DocumentGenerator
         hide_element('payment-notification--deadline')
         ''
       end
-    end
-
-    def generate_request_date(data)
-      if data['requestDate'] then format_date(data['requestDate']) else '' end
     end
 
     def generate_bank_reference_with_base(base, number)

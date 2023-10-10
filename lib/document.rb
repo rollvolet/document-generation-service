@@ -26,8 +26,7 @@ module DocumentGenerator
       template.gsub! "<!-- {{#{placeholder}}} -->", encoded_value
     end
 
-    def write_file path
-      path = @path unless path
+    def write_file path = @path
       write_to_pdf(
         path,
         @html,
