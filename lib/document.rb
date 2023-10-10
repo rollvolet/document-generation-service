@@ -37,7 +37,7 @@ module DocumentGenerator
       path
     end
 
-    def upload_file
+    def upload_file derived_from = nil
       file_name = File.split(@path).last
       file_resource_uri = @path.gsub('/share/', 'share://')
 
@@ -55,12 +55,19 @@ module DocumentGenerator
 
       now = DateTime.now
 
+      derived_from_stmt =
+        if derived_from
+        then "#{Mu::sparql_escape_uri(upload_resource_uri)} prov:wasDerivedFrom #{Mu::sparql_escape_uri(derived_from)} ."
+        else ''
+        end
+
       Mu::update %{
         PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
         PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
         PREFIX dct: <http://purl.org/dc/terms/>
         PREFIX dbpedia: <http://dbpedia.org/ontology/>
         PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
         INSERT DATA {
           #{Mu::sparql_escape_uri(upload_resource_uri)} a nfo:FileDataObject ;
             mu:uuid #{upload_resource_uuid.sparql_escape} ;
@@ -71,6 +78,7 @@ module DocumentGenerator
             nfo:fileCreated #{now.sparql_escape} ;
             dct:creator #{Mu::sparql_escape_uri(@user)} ;
             dct:type #{Mu::sparql_escape_uri(@file_type)} .
+          #{derived_from_stmt}
           #{Mu::sparql_escape_uri(file_resource_uri)} a nfo:FileDataObject ;
             mu:uuid #{@file_id.sparql_escape} ;
             nie:dataSource #{Mu::sparql_escape_uri(upload_resource_uri)} ;

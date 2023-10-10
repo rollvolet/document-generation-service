@@ -115,7 +115,7 @@ module DocumentGenerator
         hide_element('priceline-total-order .order-key')
       end
 
-      upload_file
+      upload_file invoice[:uri]
       @path
     end
 

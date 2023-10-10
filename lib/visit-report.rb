@@ -91,7 +91,7 @@ module DocumentGenerator
       history = generate_offer_history(customer[:uri], request[:case_uri])
       fill_placeholder('ORDER_HISTORY', history, encode: true)
 
-      upload_file
+      upload_file request[:uri]
       @path
     end
 
