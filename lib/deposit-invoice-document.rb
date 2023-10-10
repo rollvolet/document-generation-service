@@ -7,6 +7,11 @@ require_relative './document'
 
 module DocumentGenerator
   class DepositInvoiceDocument < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/5c93373f-30f3-454c-8835-15140ff6d1d4'
+    end
+
     def init_template deposit_invoice
       if deposit_invoice[:is_credit_note]
         if @language == 'FRA'
@@ -100,6 +105,8 @@ module DocumentGenerator
       end
 
       write_file
+      upload_file
+      @path
     end
 
     def generate_bank_reference(invoice)

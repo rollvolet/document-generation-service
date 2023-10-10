@@ -5,6 +5,11 @@ require_relative './document'
 
 module DocumentGenerator
   class InvoiceDocument < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/3abc9905-29b9-47f2-a77d-e94a4025f8c3'
+    end
+
     def init_template invoice
       if invoice[:is_credit_note]
         if @language == 'FRA'
@@ -111,6 +116,8 @@ module DocumentGenerator
       end
 
       write_file
+      upload_file
+      @path
     end
 
     def generate_bank_reference(invoice)

@@ -25,6 +25,11 @@ configure :development do
 
 end
 
+before do
+  session = session_id_header request
+  @user = fetch_user_for_session session
+end
+
 post '/documents/visit-summary' do
   request.body.rewind
   json_body = JSON.parse request.body.read
@@ -163,7 +168,7 @@ post '/invoices/:id/documents' do
   data = @json_body['data']
   language = data['attributes']['language']
 
-  generator = DocumentGenerator::InvoiceDocument.new id: id, language: language
+  generator = DocumentGenerator::InvoiceDocument.new id: id, language: language, user: @user
   path = generator.generate(data)
 
   send_file path
@@ -174,7 +179,7 @@ post '/deposit-invoices/:id/documents' do
   data = @json_body['data']
   language = data['attributes']['language']
 
-  generator = DocumentGenerator::DepositInvoiceDocument.new id: id, language: language
+  generator = DocumentGenerator::DepositInvoiceDocument.new id: id, language: language, user: @user
   path = generator.generate(data)
 
   send_file path

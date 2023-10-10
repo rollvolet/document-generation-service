@@ -680,3 +680,17 @@ def fetch_recent_offers(customer_uri, case_uri)
     }
   end
 end
+
+def fetch_user_for_session(session)
+  solutions = Mu.query %{
+    PREFIX muSession: <http://mu.semte.ch/vocabularies/session/>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+    SELECT ?user
+    WHERE {
+      #{Mu::sparql_escape_uri(session)} muSession:account ?account .
+      ?user foaf:account ?account .
+    } LIMIT 1
+  }
+  solutions.first[:user]&.value
+end
