@@ -372,6 +372,18 @@ def fetch_intervention(id)
   }
   solution = Mu::query(query).first
 
+  technicians = Mu::query(%{
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    SELECT ?technician
+    WHERE {
+      ?uri a crm:Intervention ;
+        mu:uuid #{id.sparql_escape} ;
+        crm:plannedTechnicians/foaf:firstName ?technician .
+    }
+  }).map { |solution| solution[:technician].value }
+
   if solution
     {
       uri: solution[:uri].value,
@@ -382,6 +394,7 @@ def fetch_intervention(id)
       way_of_entry: solution[:way_of_entry]&.value,
       description: solution[:description]&.value,
       comment: solution[:comment]&.value,
+      technicians: technicians,
       case_uri: solution[:case].value
     }
   else

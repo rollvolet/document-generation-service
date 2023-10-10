@@ -49,16 +49,9 @@ post '/requests/:id/documents' do
   send_file path
 end
 
-post '/documents/intervention-report' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  data = json_body['intervention']
-  id = data['id']
-  path = "/tmp/#{id}-interventierapport.pdf"
-
-  generator = DocumentGenerator::InterventionReport.new
-  generator.generate(path, data)
+post '/interventions/:id/documents' do
+  generator = DocumentGenerator::InterventionReport.new id: params['id'], user: @user
+  path = generator.generate
 
   send_file path
 end
