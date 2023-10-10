@@ -12,8 +12,6 @@ require_relative 'lib/invoice-document'
 require_relative 'lib/deposit-invoice-document'
 require_relative 'lib/vat-certificate'
 
-# TODO file cleanup job?
-
 configure :development do
   class WickedPdf # monkey patch useful for debugging
     def in_development_mode?
@@ -36,16 +34,12 @@ post '/documents/visit-summary' do
   generator = DocumentGenerator::VisitSummary.new
   generator.generate(path, json_body)
 
-  # TODO cleanup temporary created files of WickedPdf
-
   send_file path
 end
 
 post '/requests/:id/documents' do
   generator = DocumentGenerator::VisitReport.new id: params['id']
   path = generator.generate
-
-  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end
@@ -60,8 +54,6 @@ post '/documents/intervention-report' do
 
   generator = DocumentGenerator::InterventionReport.new
   generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end
@@ -82,8 +74,6 @@ post '/documents/offer' do
   generator = DocumentGenerator::OfferDocument.new
   generator.generate(path, data)
 
-  # TODO cleanup temporary created files of WickedPdf
-
   send_file path
 end
 
@@ -103,8 +93,6 @@ post '/documents/order' do
   generator = DocumentGenerator::OrderDocument.new
   generator.generate(path, data)
 
-  # TODO cleanup temporary created files of WickedPdf
-
   send_file path
 end
 
@@ -123,8 +111,6 @@ post '/documents/delivery-note' do
   generator = DocumentGenerator::DeliveryNote.new
   generator.generate(path, data)
 
-  # TODO cleanup temporary created files of WickedPdf
-
   send_file path
 end
 
@@ -142,8 +128,6 @@ post '/documents/production-ticket' do
   path = "/tmp/#{id}-productiebon.pdf"
   generator = DocumentGenerator::ProductionTicket.new
   generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end
@@ -164,8 +148,6 @@ post '/documents/production-ticket-watermark' do
       path = "/tmp/#{random}-production-ticket-watermark.pdf"
       pdf.save path
 
-      # TODO cleanup temporary created files
-
       send_file path
     rescue CombinePDF::ParsingError
       # log.warn "Unable to parse incoming production ticket PDF and add a watermark. Just returning the original production ticket instead."
@@ -184,8 +166,6 @@ post '/invoices/:id/documents' do
   generator = DocumentGenerator::InvoiceDocument.new id: id, language: language
   path = generator.generate(data)
 
-  # TODO cleanup temporary created files of WickedPdf
-
   send_file path
 end
 
@@ -196,8 +176,6 @@ post '/deposit-invoices/:id/documents' do
 
   generator = DocumentGenerator::DepositInvoiceDocument.new id: id, language: language
   path = generator.generate(data)
-
-  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end
@@ -213,8 +191,6 @@ post '/documents/certificate' do
 
   generator = DocumentGenerator::VatCertificate.new
   generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
 
   send_file path
 end

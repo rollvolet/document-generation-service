@@ -15,7 +15,8 @@ module DocumentGenerator
         page_size: 'A4',
         orientation: 'Portrait',
         header: { content: '' },
-        footer: { content: '' }
+        footer: { content: '' },
+        delete_temporary_files: true
       }
 
       options = default_options.merge options
@@ -23,8 +24,8 @@ module DocumentGenerator
       pdf = WickedPdf.new.pdf_from_string(html, options)
 
       # Write HTML to a document for debugging purposes
-      html_path = path.sub '.pdf', '.html'
-      File.open(html_path, 'wb') { |file| file << html }
+      # html_path = path.sub '.pdf', '.html'
+      # File.open(html_path, 'wb') { |file| file << html }
       File.open(path, 'wb') { |file| file << pdf }
     end
 
