@@ -34,7 +34,7 @@ post '/documents/visit-summary' do
   request.body.rewind
   json_body = JSON.parse request.body.read
 
-  path = "/tmp/#{Mu.generate_uuid}-bezoekrapport.pdf"
+  path = "/tmp/#{Mu::generate_uuid}-bezoekrapport.pdf"
 
   generator = DocumentGenerator::VisitSummary.new
   generator.generate(path, json_body)

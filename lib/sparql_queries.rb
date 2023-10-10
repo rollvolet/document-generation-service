@@ -17,51 +17,51 @@ def fetch_case(case_uri)
   query += "        ?intervention_uri ?intervention_id ?request_uri ?request_id ?offer_uri ?offer_id"
   query += "        ?order_uri ?order_id ?invoice_uri ?invoice_id"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(case_uri)} a dossier:Dossier ;"
+  query += "   #{Mu::sparql_escape_uri(case_uri)} a dossier:Dossier ;"
   query += "     dct:identifier ?identifier ."
-  query += "   OPTIONAL { #{Mu.sparql_escape_uri(case_uri)} frapo:hasReferenceNumber ?reference . }"
-  query += "   OPTIONAL { #{Mu.sparql_escape_uri(case_uri)} skos:comment ?comment . }"
-  query += "   #{Mu.sparql_escape_uri(case_uri)} schema:customer ?customer_uri ."
+  query += "   OPTIONAL { #{Mu::sparql_escape_uri(case_uri)} frapo:hasReferenceNumber ?reference . }"
+  query += "   OPTIONAL { #{Mu::sparql_escape_uri(case_uri)} skos:comment ?comment . }"
+  query += "   #{Mu::sparql_escape_uri(case_uri)} schema:customer ?customer_uri ."
   query += "   ?customer_uri a vcard:VCard ;"
   query += "     mu:uuid ?customer_id ."
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} crm:contact ?contact_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} crm:contact ?contact_uri ."
   query += "     ?contact_uri a nco:Contact ;"
   query += "       mu:uuid ?contact_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} crm:building ?building_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} crm:building ?building_uri ."
   query += "     ?building_uri a gebouw:Gebouw ;"
   query += "       mu:uuid ?building_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:intervention ?intervention_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} ext:intervention ?intervention_uri ."
   query += "     ?intervention_uri a crm:Intervention ;"
   query += "       mu:uuid ?intervention_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:request ?request_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} ext:request ?request_uri ."
   query += "     ?request_uri a crm:Request ;"
   query += "       mu:uuid ?request_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:offer ?offer_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} ext:offer ?offer_uri ."
   query += "     ?offer_uri a schema:Offer ;"
   query += "       mu:uuid ?offer_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:order ?order_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} ext:order ?order_uri ."
   query += "     ?order_uri a p2poDocument:PurchaseOrder ;"
   query += "       mu:uuid ?order_id ."
   query += "   }"
   query += "   OPTIONAL {"
-  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:invoice ?invoice_uri ."
+  query += "     #{Mu::sparql_escape_uri(case_uri)} ext:invoice ?invoice_uri ."
   query += "     ?invoice_uri a p2poInvoice:E-FinalInvoice ;"
   query += "       mu:uuid ?invoice_id ."
   query += "   }"
   query += " } LIMIT 1"
 
-  solution = Mu.query(query).first
+  solution = Mu::query(query).first
 
   _case = {
     identifier: solution[:identifier].value,
@@ -90,7 +90,7 @@ def fetch_customer(customer_uri)
   query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
   query += " SELECT ?uri ?type ?number ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?vat_number ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   BIND (#{Mu.sparql_escape_uri(customer_uri)} as ?uri) ."
+  query += "   BIND (#{Mu::sparql_escape_uri(customer_uri)} as ?uri) ."
   query += "   ?uri a vcard:VCard ;"
   query += "     dct:type ?type ;"
   query += "     vcard:hasUID ?number ."
@@ -117,7 +117,7 @@ def fetch_customer(customer_uri)
   query += " } LIMIT 1"
 
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   customers = solutions.map do |solution|
     if solution[:language]
@@ -165,7 +165,7 @@ def fetch_contact(contact_uri)
   query += " PREFIX nco: <http://www.semanticdesktop.org/ontologies/2007/03/22/nco#>"
   query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   BIND (#{Mu.sparql_escape_uri(contact_uri)} as ?uri) ."
+  query += "   BIND (#{Mu::sparql_escape_uri(contact_uri)} as ?uri) ."
   query += "   ?uri a nco:Contact ."
   query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
   query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
@@ -188,7 +188,7 @@ def fetch_contact(contact_uri)
   query += "   }"
   query += " } LIMIT 1"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   contacts = solutions.map do |solution|
     if solution[:language]
@@ -233,7 +233,7 @@ def fetch_building(building_uri)
   query += " PREFIX gebouw: <https://data.vlaanderen.be/ns/gebouw#>"
   query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   BIND (#{Mu.sparql_escape_uri(building_uri)} as ?uri) ."
+  query += "   BIND (#{Mu::sparql_escape_uri(building_uri)} as ?uri) ."
   query += "   ?uri a gebouw:Gebouw ."
   query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
   query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
@@ -256,7 +256,7 @@ def fetch_building(building_uri)
   query += "   }"
   query += " } LIMIT 1"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   buildings = solutions.map do |solution|
     if solution[:language]
@@ -318,7 +318,7 @@ def fetch_request(id)
   query += "   OPTIONAL { ?uri dct:description ?description . }"
   query += " } LIMIT 1"
 
-  solution = Mu.query(query).first
+  solution = Mu::query(query).first
 
   if solution
     if solution[:visitor]
@@ -365,7 +365,7 @@ def fetch_intervention(id)
   query += "   OPTIONAL { ?uri skos:comment ?comment . }"
   query += " } LIMIT 1"
 
-  solution = Mu.query(query).first
+  solution = Mu::query(query).first
 
   if solution
     {
@@ -417,7 +417,7 @@ def fetch_invoice(invoice_id)
   query += "   OPTIONAL { ?case frapo:hasReferenceNumber ?reference . }"
   query += " } LIMIT 1"
 
-  solution = Mu.query(query).first
+  solution = Mu::query(query).first
   if solution
     {
       id: invoice_id,
@@ -453,7 +453,7 @@ def fetch_calendar_event(id, scope = 'interventions')
   query += "     ncal:summary ?subject ."
   query += " } LIMIT 1"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   events = solutions.map do |solution|
     {
@@ -473,7 +473,7 @@ def fetch_telephones(customer_uri)
   query += " PREFIX dct: <http://purl.org/dc/terms/>"
   query += " SELECT ?telephone ?value ?position ?prefix ?note"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(customer_uri)} vcard:hasTelephone ?telephone ."
+  query += "   #{Mu::sparql_escape_uri(customer_uri)} vcard:hasTelephone ?telephone ."
   query += "   ?telephone a vcard:Telephone ;"
   query += "     vcard:hasValue ?value ;"
   query += "     vcard:hasCountryName ?country ;"
@@ -484,7 +484,7 @@ def fetch_telephones(customer_uri)
   query += "   OPTIONAL { ?telephone vcard:hasNote ?note . }"
   query += " } ORDER BY ?position"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -505,13 +505,13 @@ def fetch_emails(customer_uri)
   query += " PREFIX dct: <http://purl.org/dc/terms/>"
   query += " SELECT ?email ?value ?note"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(customer_uri)} vcard:hasEmail ?email ."
+  query += "   #{Mu::sparql_escape_uri(customer_uri)} vcard:hasEmail ?email ."
   query += "   ?email a vcard:Email ;"
   query += "     vcard:hasValue ?value ."
   query += "   OPTIONAL { ?email vcard:hasNote ?note . }"
   query += " } ORDER BY ?value"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -542,7 +542,7 @@ def fetch_offerlines(id)
   query += "   OPTIONAL { ?offerline dct:description ?description . }"
   query += " } ORDER BY ?position"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -578,7 +578,7 @@ def fetch_invoicelines(order_uri: nil, invoice_uri: nil)
   query += "   OPTIONAL { ?invoiceline dct:description ?description . }"
   query += " } ORDER BY ?position"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -612,7 +612,7 @@ def fetch_deposit_invoices_for_invoice(invoice_id)
   query += "     mu:uuid #{invoice_id.sparql_escape} ."
   query += " } ORDER BY ?number"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -636,7 +636,7 @@ def fetch_employee_by_name(name)
   query += "   OPTIONAL { ?employee frapo:initial ?initials . }"
   query += " } LIMIT 1"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
   solution = solutions.first
   if solution
     {
@@ -657,18 +657,18 @@ def fetch_recent_offers(customer_uri, case_uri)
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " SELECT ?offer ?request_number ?offer_date ?visitor ?order"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(customer_uri)} a vcard:VCard ."
-  query += "   ?case schema:customer #{Mu.sparql_escape_uri(customer_uri)} ;"
+  query += "   #{Mu::sparql_escape_uri(customer_uri)} a vcard:VCard ."
+  query += "   ?case schema:customer #{Mu::sparql_escape_uri(customer_uri)} ;"
   query += "     ext:request ?request ;"
   query += "     ext:offer ?offer ."
   query += "   ?offer dct:issued ?offer_date ."
   query += "   ?request schema:identifier ?request_number ."
   query += "   OPTIONAL { ?request crm:visitor/frapo:initial ?visitor .}"
   query += "   OPTIONAL { ?case ext:order ?order . }"
-  query += "   FILTER (?case != #{Mu.sparql_escape_uri(case_uri)})"
+  query += "   FILTER (?case != #{Mu::sparql_escape_uri(case_uri)})"
   query += " } ORDER BY DESC(?offer_date) LIMIT 5"
 
-  solutions = Mu.query(query)
+  solutions = Mu::query(query)
 
   solutions.map do |solution|
     {
@@ -682,7 +682,7 @@ def fetch_recent_offers(customer_uri, case_uri)
 end
 
 def fetch_user_for_session(session)
-  solutions = Mu.query %{
+  solutions = Mu::query %{
     PREFIX muSession: <http://mu.semte.ch/vocabularies/session/>
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
