@@ -115,7 +115,6 @@ module DocumentGenerator
         hide_element('priceline-total-order .order-key')
       end
 
-      write_file
       upload_file
       @path
     end

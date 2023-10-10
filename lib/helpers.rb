@@ -2,33 +2,6 @@ module DocumentGenerator
   module Helpers
     BASE_URI = 'http://data.rollvolet.be/%{resource}/%{id}'
 
-    def write_to_pdf(path, html, options = {})
-      default_options = {
-        margin: {
-          left: 0,
-          top: 14, # top margin on each page
-          bottom: 20, # height (mm) of the footer
-          right: 0
-        },
-        disable_smart_shrinking: true,
-        print_media_type: true,
-        page_size: 'A4',
-        orientation: 'Portrait',
-        header: { content: '' },
-        footer: { content: '' },
-        delete_temporary_files: true
-      }
-
-      options = default_options.merge options
-
-      pdf = WickedPdf.new.pdf_from_string(html, options)
-
-      # Write HTML to a document for debugging purposes
-      # html_path = path.sub '.pdf', '.html'
-      # File.open(html_path, 'wb') { |file| file << html }
-      File.open(path, 'wb') { |file| file << pdf }
-    end
-
     def hide_element(css_class)
       display_element(css_class, 'none')
     end
