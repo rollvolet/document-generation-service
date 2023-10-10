@@ -69,8 +69,8 @@ module DocumentGenerator
             nfo:fileSize #{Mu::sparql_escape_int(file_size)} ;
             dbpedia:fileExtension #{file_extension.sparql_escape} ;
             nfo:fileCreated #{now.sparql_escape} ;
-            dct:creator #{sparql_escape_uri(@user)} ;
-            dct:type #{sparql_escape_uri(@file_type)} .
+            dct:creator #{Mu::sparql_escape_uri(@user)} ;
+            dct:type #{Mu::sparql_escape_uri(@file_type)} .
           #{Mu::sparql_escape_uri(file_resource_uri)} a nfo:FileDataObject ;
             mu:uuid #{@file_id.sparql_escape} ;
             nie:dataSource #{Mu::sparql_escape_uri(upload_resource_uri)} ;
@@ -79,7 +79,7 @@ module DocumentGenerator
             nfo:fileSize #{Mu::sparql_escape_int(file_size)} ;
             dbpedia:fileExtension #{file_extension.sparql_escape} ;
             nfo:fileCreated #{now.sparql_escape} ;
-            dct:creator #{sparql_escape_uri(@user)} .
+            dct:creator #{Mu::sparql_escape_uri(@user)} .
         }
       }
 
