@@ -1,4 +1,88 @@
-def fetch_customer_by_case(case_uri)
+def fetch_case(case_uri)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
+  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX nco: <http://www.semanticdesktop.org/ontologies/2007/03/22/nco#>"
+  query += " PREFIX gebouw: <https://data.vlaanderen.be/ns/gebouw#>"
+  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
+  query += " PREFIX p2poDocument: <https://purl.org/p2p-o/document#>"
+  query += " SELECT ?identifier ?reference ?comment"
+  query += "        ?customer_uri ?customer_id ?contact_uri ?contact_id ?building_uri ?building_id"
+  query += "        ?intervention_uri ?intervention_id ?request_uri ?request_id ?offer_uri ?offer_id"
+  query += "        ?order_uri ?order_id ?invoice_uri ?invoice_id"
+  query += " WHERE {"
+  query += "   #{Mu.sparql_escape_uri(case_uri)} a dossier:Dossier ;"
+  query += "     dct:identifier ?identifier ."
+  query += "   OPTIONAL { #{Mu.sparql_escape_uri(case_uri)} frapo:hasReferenceNumber ?reference . }"
+  query += "   OPTIONAL { #{Mu.sparql_escape_uri(case_uri)} skos:comment ?comment . }"
+  query += "   #{Mu.sparql_escape_uri(case_uri)} schema:customer ?customer_uri ."
+  query += "   ?customer_uri a vcard:VCard ;"
+  query += "     mu:uuid ?customer_id ."
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} crm:contact ?contact_uri ."
+  query += "     ?contact_uri a nco:Contact ;"
+  query += "       mu:uuid ?contact_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} crm:building ?building_uri ."
+  query += "     ?building_uri a gebouw:Gebouw ;"
+  query += "       mu:uuid ?building_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:intervention ?intervention_uri ."
+  query += "     ?intervention_uri a crm:Intervention ;"
+  query += "       mu:uuid ?intervention_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:request ?request_uri ."
+  query += "     ?request_uri a crm:Request ;"
+  query += "       mu:uuid ?request_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:offer ?offer_uri ."
+  query += "     ?offer_uri a schema:Offer ;"
+  query += "       mu:uuid ?offer_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:order ?order_uri ."
+  query += "     ?order_uri a p2poDocument:PurchaseOrder ;"
+  query += "       mu:uuid ?order_id ."
+  query += "   }"
+  query += "   OPTIONAL {"
+  query += "     #{Mu.sparql_escape_uri(case_uri)} ext:invoice ?invoice_uri ."
+  query += "     ?invoice_uri a p2poInvoice:E-FinalInvoice ;"
+  query += "       mu:uuid ?invoice_id ."
+  query += "   }"
+  query += " } LIMIT 1"
+
+  solution = Mu.query(query).first
+
+  _case = {
+    identifier: solution[:identifier].value,
+    reference: solution[:reference]&.value,
+    comment: solution[:comment]&.value
+  }
+  [:customer, :contact, :building, :intervention, :request, :offer, :order, :invoice].each do |key|
+    id_key = "#{key}_id".to_sym
+    uri_key = "#{key}_uri".to_sym
+    if solution[id_key] or solution[uri_key]
+      _case[key] = {
+        uri: solution[uri_key]&.value,
+        id: solution[id_key]&.value
+      }
+    end
+  end
+
+  _case
+end
+
+def fetch_customer(customer_uri)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
@@ -6,7 +90,7 @@ def fetch_customer_by_case(case_uri)
   query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
   query += " SELECT ?uri ?type ?number ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?vat_number ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(case_uri)} schema:customer ?uri ."
+  query += "   BIND (#{Mu.sparql_escape_uri(customer_uri)} as ?uri) ."
   query += "   ?uri a vcard:VCard ;"
   query += "     dct:type ?type ;"
   query += "     vcard:hasUID ?number ."
@@ -72,7 +156,7 @@ def fetch_customer_by_case(case_uri)
   customers.first
 end
 
-def fetch_contact_by_case(case_uri)
+def fetch_contact(contact_uri)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
@@ -81,7 +165,7 @@ def fetch_contact_by_case(case_uri)
   query += " PREFIX nco: <http://www.semanticdesktop.org/ontologies/2007/03/22/nco#>"
   query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(case_uri)} crm:contact ?uri ."
+  query += "   BIND (#{Mu.sparql_escape_uri(contact_uri)} as ?uri) ."
   query += "   ?uri a nco:Contact ."
   query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
   query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
@@ -140,7 +224,7 @@ def fetch_contact_by_case(case_uri)
   contacts.first
 end
 
-def fetch_building_by_case(case_uri)
+def fetch_building(building_uri)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
@@ -149,7 +233,7 @@ def fetch_building_by_case(case_uri)
   query += " PREFIX gebouw: <https://data.vlaanderen.be/ns/gebouw#>"
   query += " SELECT ?uri ?hon_prefix ?first_name ?last_name ?suffix ?print_prefix ?print_suffix ?print_suffix_in_front ?language ?language_name ?language_code ?address ?street ?postal_code ?city ?country"
   query += " WHERE {"
-  query += "   #{Mu.sparql_escape_uri(case_uri)} crm:building ?uri ."
+  query += "   BIND (#{Mu.sparql_escape_uri(building_uri)} as ?uri) ."
   query += "   ?uri a gebouw:Gebouw ."
   query += "   OPTIONAL { ?uri vcard:hasHonorificPrefix ?hon_prefix . }"
   query += "   OPTIONAL { ?uri vcard:hasGivenName ?first_name . }"
@@ -211,7 +295,6 @@ end
 def fetch_request(id)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
-  query += " PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>"
   query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
   query += " PREFIX dct: <http://purl.org/dc/terms/>"
   query += " PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
@@ -235,9 +318,9 @@ def fetch_request(id)
   query += "   OPTIONAL { ?uri dct:description ?description . }"
   query += " } LIMIT 1"
 
-  solutions = Mu.query(query)
+  solution = Mu.query(query).first
 
-  requests = solutions.map do |solution|
+  if solution
     if solution[:visitor]
       visitor = {
         uri: solution[:visitor].value,
@@ -247,6 +330,7 @@ def fetch_request(id)
     end
     {
       uri: solution[:uri].value,
+      id: id,
       date: solution[:date].value,
       number: solution[:number].value,
       visitor: visitor,
@@ -255,9 +339,105 @@ def fetch_request(id)
       description: solution[:description]&.value,
       case_uri: solution[:case].value
     }
+  else
+    nil
   end
+end
 
-  requests.first
+def fetch_intervention(id)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
+  query += " PREFIX skos: <http://www.w3.org/2004/02/skos/core#>"
+  query += " SELECT ?uri ?date ?number ?employee ?way_of_entry ?case ?description ?comment"
+  query += " WHERE {"
+  query += "   ?uri a crm:Intervention ;"
+  query += "     mu:uuid #{id.sparql_escape} ;"
+  query += "     dct:issued ?date ;"
+  query += "     schema:identifier ?number ."
+  query += "   ?case ext:intervention ?uri ."
+  query += "   OPTIONAL { ?uri crm:employee/foaf:firstName ?employee . }"
+  query += "   OPTIONAL { ?uri crm:wayOfEntry/skos:prefLabel ?way_of_entry . }"
+  query += "   OPTIONAL { ?uri dct:description ?description . }"
+  query += "   OPTIONAL { ?uri skos:comment ?comment . }"
+  query += " } LIMIT 1"
+
+  solution = Mu.query(query).first
+
+  if solution
+    {
+      uri: solution[:uri].value,
+      id: id,
+      date: solution[:date].value,
+      number: solution[:number].value,
+      employee: solution[:employee]&.value,
+      way_of_entry: solution[:way_of_entry]&.value,
+      description: solution[:description]&.value,
+      comment: solution[:comment]&.value,
+      case_uri: solution[:case].value
+    }
+  else
+    nil
+  end
+end
+
+def fetch_invoice(invoice_id)
+  query = " PREFIX schema: <http://schema.org/>"
+  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
+  query += " PREFIX dct: <http://purl.org/dc/terms/>"
+  query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
+  query += " PREFIX p2poPrice: <https://purl.org/p2p-o/price#>"
+  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
+  query += " PREFIX p2poDocument: <https://purl.org/p2p-o/document#>"
+  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
+  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
+  query += " SELECT ?invoice ?date ?type ?number ?amount ?rate ?vatCode ?dueDate ?paymentDate ?paidDeposits ?outro ?reference ?case"
+  query += " WHERE {"
+  query += "   ?invoice a p2poDocument:E-Invoice ;"
+  query += "     mu:uuid #{invoice_id.sparql_escape} ;"
+  query += "     p2poInvoice:dateOfIssue ?date ;"
+  query += "     p2poInvoice:invoiceNumber ?number ;"
+  query += "     p2poInvoice:hasTotalLineNetAmount ?amount ."
+  query += "   OPTIONAL { ?invoice dct:type ?type . }"
+  query += "   OPTIONAL { ?invoice p2poInvoice:paymentDueDate ?dueDate . }"
+  query += "   OPTIONAL { ?invoice crm:paymentDate ?paymentDate . }"
+  query += "   OPTIONAL { ?invoice crm:paidDeposits ?paidDeposits . }"
+  query += "   OPTIONAL { ?invoice p2poInvoice:paymentTerms ?outro . }"
+  query += "   ?case ?caseP ?invoice ;"
+  query += "     p2poPrice:hasVATCategoryCode ?vatRate ."
+  query += "   FILTER (?caseP = ext:invoice || ?caseP = ext:depositInvoice)"
+  query += "   ?vatRate a price:VatRate ;"
+  query += "     schema:value ?rate ;"
+  query += "     schema:identifier ?vatCode ."
+  query += "   OPTIONAL { ?case frapo:hasReferenceNumber ?reference . }"
+  query += " } LIMIT 1"
+
+  solution = Mu.query(query).first
+  if solution
+    {
+      id: invoice_id,
+      uri: solution[:invoice].value,
+      is_credit_note: solution[:type]&.value == 'https://purl.org/p2p-o/invoice#E-CreditNote',
+      invoice_date: solution[:date].value,
+      number: solution[:number].value,
+      amount: solution[:amount].value.to_f,
+      due_date: solution[:dueDate]&.value,
+      payment_date: solution[:paymentDate]&.value,
+      paid_deposits: solution[:paidDeposits]&.value.to_f,
+      vat_rate: solution[:rate].value.to_i,
+      vat_code: solution[:vatCode],
+      outro: solution[:outro]&.value,
+      reference: solution[:reference]&.value,
+      case_uri: solution[:case]&.value
+    }
+  else
+    nil
+  end
 end
 
 def fetch_calendar_event(id, scope = 'interventions')
@@ -375,23 +555,14 @@ def fetch_offerlines(id)
   end
 end
 
-def fetch_invoicelines(order_id: nil, invoice_uri: nil)
-  order_statement = ''
-  if (order_id)
-    order_uri = get_resource_uri('orders', order_id)
-    order_statement = "?invoiceline prov:wasDerivedFrom <#{order_uri}> ."
-  end
-
-  invoice_statement = ''
-  if (invoice_uri)
-    invoice_statement = "<#{invoice_uri}> p2poInvoice:hasInvoiceLine ?invoiceline."
-  end
+def fetch_invoicelines(order_uri: nil, invoice_uri: nil)
+  order_stmt = if (order_uri) then "?invoiceline dct:isPartOf <#{order_uri}> ." else '' end
+  invoice_stmt = if (invoice_uri) then "<#{invoice_uri}> p2poInvoice:hasInvoiceLine ?invoiceline." else '' end
 
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX dct: <http://purl.org/dc/terms/>"
   query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
   query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
-  query += " PREFIX prov: <http://www.w3.org/ns/prov#>"
   query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
   query += " SELECT ?invoiceline ?description ?amount ?rate ?vatCode"
   query += " WHERE {"
@@ -399,8 +570,8 @@ def fetch_invoicelines(order_id: nil, invoice_uri: nil)
   query += "     schema:amount ?amount ;"
   query += "     price:hasVatRate ?vatRate ;"
   query += "     schema:position ?position ."
-  query += order_statement
-  query += invoice_statement
+  query += order_stmt
+  query += invoice_stmt
   query += "   ?vatRate a price:VatRate ;"
   query += "     schema:value ?rate ;"
   query += "     schema:identifier ?vatCode ."
@@ -420,63 +591,10 @@ def fetch_invoicelines(order_id: nil, invoice_uri: nil)
   end
 end
 
-def fetch_invoice(invoice_id)
-  query = " PREFIX schema: <http://schema.org/>"
-  query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
-  query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
-  query += " PREFIX dct: <http://purl.org/dc/terms/>"
-  query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
-  query += " PREFIX p2poPrice: <https://purl.org/p2p-o/price#>"
-  query += " PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>"
-  query += " PREFIX p2poDocument: <https://purl.org/p2p-o/document#>"
-  query += " PREFIX frapo: <http://purl.org/cerif/frapo/>"
-  query += " PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>"
-  query += " SELECT ?invoice ?date ?type ?number ?amount ?rate ?vatCode ?dueDate ?paymentDate ?paidDeposits ?outro ?reference"
-  query += " WHERE {"
-  query += "   ?invoice a p2poDocument:E-Invoice ;"
-  query += "     mu:uuid #{invoice_id.sparql_escape} ;"
-  query += "     p2poInvoice:dateOfIssue ?date ;"
-  query += "     p2poInvoice:invoiceNumber ?number ;"
-  query += "     p2poInvoice:hasTotalLineNetAmount ?amount ."
-  query += "   OPTIONAL { ?invoice dct:type ?type . }"
-  query += "   OPTIONAL { ?invoice p2poInvoice:paymentDueDate ?dueDate . }"
-  query += "   OPTIONAL { ?invoice crm:paymentDate ?paymentDate . }"
-  query += "   OPTIONAL { ?invoice crm:paidDeposits ?paidDeposits . }"
-  query += "   OPTIONAL { ?invoice p2poInvoice:paymentTerms ?outro . }"
-  query += "   ?case dossier:Dossier.bestaatUit ?invoice ;"
-  query += "     p2poPrice:hasVATCategoryCode ?vatRate ."
-  query += "   ?vatRate a price:VatRate ;"
-  query += "     schema:value ?rate ;"
-  query += "     schema:identifier ?vatCode ."
-  query += "   OPTIONAL { ?case frapo:hasReferenceNumber ?reference . }"
-  query += " } LIMIT 1"
-
-  solutions = Mu.query(query)
-  solution = solutions.first
-  if solution
-    {
-      id: invoice_id,
-      uri: solution[:invoice].value,
-      is_credit_note: solution[:type]&.value == 'https://purl.org/p2p-o/invoice#E-CreditNote',
-      invoice_date: solution[:date].value,
-      number: solution[:number].value,
-      amount: solution[:amount].value.to_f,
-      due_date: solution[:dueDate]&.value,
-      payment_date: solution[:paymentDate]&.value,
-      paid_deposits: solution[:paidDeposits]&.value.to_f,
-      vat_rate: solution[:rate].value.to_i,
-      vat_code: solution[:vatCode],
-      outro: solution[:outro]&.value,
-      reference: solution[:reference]&.value
-    }
-  else
-    nil
-  end
-end
-
 def fetch_deposit_invoices_for_invoice(invoice_id)
   query = " PREFIX schema: <http://schema.org/>"
   query += " PREFIX mu: <http://mu.semte.ch/vocabularies/core/>"
+  query += " PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>"
   query += " PREFIX dct: <http://purl.org/dc/terms/>"
   query += " PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>"
   query += " PREFIX price: <http://data.rollvolet.be/vocabularies/pricing/>"
@@ -488,7 +606,8 @@ def fetch_deposit_invoices_for_invoice(invoice_id)
   query += "     p2poInvoice:invoiceNumber ?number ;"
   query += "     p2poInvoice:hasTotalLineNetAmount ?amount ."
   query += "   OPTIONAL { ?depositInvoice dct:type ?type . }"
-  query += "   ?case dossier:Dossier.bestaatUit ?depositInvoice, ?invoice ."
+  query += "   ?case ext:depositInvoice ?depositInvoice ."
+  query += "   ?case ext:invoice ?invoice ."
   query += "   ?invoice a p2poInvoice:E-FinalInvoice ;"
   query += "     mu:uuid #{invoice_id.sparql_escape} ."
   query += " } ORDER BY ?number"

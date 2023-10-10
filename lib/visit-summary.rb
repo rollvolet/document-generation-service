@@ -155,7 +155,7 @@ module DocumentGenerator
       entries = history.map do |entry|
         order_flag = if entry['isOrdered'] then 'x' else '-' end
         date = DateTime.parse(entry['offer']['offerDate']).strftime("%m/%Y")
-        "<div>#{order_flag} #{date} AD #{format_request_number(entry['offer']['requestNumber'])} #{entry['visitor']}</div>"
+        "<div>#{order_flag} #{date} #{format_request_number(entry['offer']['requestNumber'])} #{entry['visitor']}</div>"
       end
       entries.join
     end

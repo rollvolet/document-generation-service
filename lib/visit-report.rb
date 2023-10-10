@@ -15,9 +15,10 @@ module DocumentGenerator
 
     def generate
       request = fetch_request(@resource_id)
-      customer = fetch_customer_by_case(request[:case_uri])
-      contact = fetch_contact_by_case(request[:case_uri])
-      building = fetch_building_by_case(request[:case_uri])
+      _case = fetch_case(request[:case_uri])
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
 
       init_template(request)
 
@@ -200,7 +201,7 @@ module DocumentGenerator
       entries = history.map do |entry|
         order_flag = if entry[:is_ordered] then 'x' else '-' end
         date = entry[:date]&.strftime("%m/%Y")
-        "<div>#{order_flag} #{date} AD #{format_request_number(entry[:number])} #{entry[:visitor]}</div>"
+        "<div>#{order_flag} #{date} #{format_request_number(entry[:number])} #{entry[:visitor]}</div>"
       end
       entries.join
     end

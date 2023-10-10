@@ -61,6 +61,16 @@ module DocumentGenerator
       BASE_URI % { :resource => resource, :id => id }
     end
 
+    def generate_print_name(data)
+      name = ''
+      name += data[:honorific_prefix] if data[:honorific_prefix] and data[:print_suffix_in_front]
+      name += " #{data[:first_name]}" if data[:first_name] and data[:print_prefix]
+      name += " #{data[:last_name]}" if data[:last_name]
+      name += " #{data[:suffix]}" if data[:suffix] and data[:print_suffix]
+      name += " #{data[:honorific_prefix]}" if data[:honorific_prefix] and not data[:print_suffix_in_front]
+      name
+    end
+
     def generate_building(data)
       building = data['building']
 
@@ -84,69 +94,15 @@ module DocumentGenerator
       end
     end
 
-    # Address is always the address of the customer, even if a contact is attached
-    def generate_addresslines(data)
-      customer = data['customer']
-      hon_prefix = customer['honorificPrefix']
-
-      name = ''
-      name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and customer['printInFront']
-      name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
-      name += " #{customer['name']}" if customer['name']
-      name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
-      name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not customer['printInFront']
-
-      addresslines = if name then "#{name}<br>" else "" end
-      addresslines += "#{customer['address1']}<br>" if customer['address1']
-      addresslines += "#{customer['address2']}<br>" if customer['address2']
-      addresslines += "#{customer['address3']}<br>" if customer['address3']
-      addresslines += customer['postalCode'] if customer['postalCode']
-      addresslines += " #{customer['city']}" if customer['city']
-
-      addresslines
-    end
-
-    def generate_contactlines(data)
-      vat_number = data['customer']['vatNumber']
-      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
-
-      contact = data['contact']
-      if contact
-        hon_prefix = contact['honorificPrefix']
-        name = 'Contact: '
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
-        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
-        name += " #{contact['name']}" if contact['name']
-        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
-      end
-
-      if contact
-        telephones = fetch_telephones(contact['id'], 'contacts')
-      else
-        telephones = fetch_telephones(data['customer']['number'])
-      end
-      top_telephones = telephones.first(2)
-
-      contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
-      contactlines += "<div class='contactline contactline--telephones'>"
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel[:prefix], tel[:value])
-        contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
-      end
-      contactlines += "</div>"
-      contactlines
-    end
-
-    def generate_embedded_address(record, address, hide_class = nil)
+    def generate_address(record, hide_class = nil)
       if record
-        addresslines = "#{record['attributes']['name']}<br>"
-        if address
-          if address['attributes']['street']
-            streetlines = address['attributes']['street'].gsub(/\n/, '<br>')
+        addresslines = "#{generate_print_name(record)}<br>"
+        if record[:address]
+          if record[:address][:street]
+            streetlines = record[:address][:street].gsub(/\n/, '<br>')
             addresslines += "#{streetlines}<br>"
           end
-          addresslines += "#{address['attributes']['postal-code']} #{address['attributes']['city']}" if address['attributes']['postal-code'] or address['attributes']['city']
+          addresslines += "#{record[:address][:postal_code]} #{record[:address][:city]}" if record[:address][:postal_code] or record[:address][:city]
         end
         addresslines
       elsif hide_class
@@ -154,23 +110,21 @@ module DocumentGenerator
       end
     end
 
-    def generate_embedded_contactlines(customer, contact)
-      vat_number = customer['attributes']['vat-number']
-      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
+    def generate_contactlines(customer, contact)
+      contactlines =
+        if customer[:vat_number]
+        then "<div class='contactline contactline--vat-number'>#{format_vat_number(customer[:vat_number])}</div>"
+        else ''
+        end
 
       if contact
-        name = "Contact: #{contact['attributes']['name']}"
+        name = "Contact: #{generate_print_name(contact)}"
         contactlines += "<div class='contactline contactline--name'>#{name}</div>"
       end
 
       contactlines += "<div class='contactline contactline--telephones'>"
-      if contact
-        telephones = fetch_telephones(contact['id'], 'contacts')
-      else
-        telephones = fetch_telephones(customer['attributes']['number'])
-      end
+      telephones = if contact then fetch_telephones(contact[:uri]) else fetch_telephones(customer[:uri]) end
       top_telephones = telephones.first(2)
-
       top_telephones.each do |tel|
         formatted_tel = format_telephone(tel[:prefix], tel[:value])
         contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
@@ -178,6 +132,18 @@ module DocumentGenerator
       contactlines += "</div>"
 
       contactlines
+    end
+
+    def generate_own_reference(request, intervention)
+      if request
+        request_number = format_request_number(request[:number])
+        request_number += " #{request[:visitor][:initials]}" if request.dig(:visitor, :initials)
+        "<b>#{request_number}</b>"
+      elsif intervention
+        "<b>#{format_intervention_number(intervention[:number])}</b>"
+      else
+        hide_element('references--own_reference')
+      end
     end
 
     def generate_ext_reference(data)
@@ -236,7 +202,17 @@ module DocumentGenerator
 
     def format_request_number(number)
       if number
-        number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        formatted_number = number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        "AD #{formatted_number}"
+      else
+        number
+      end
+    end
+
+    def format_intervention_number(number)
+      if number
+        formatted_number = number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        "IR #{formatted_number}"
       else
         number
       end

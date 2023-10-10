@@ -133,7 +133,7 @@ module DocumentGenerator
     def generate_own_reference(data)
       request = data['offer']['request']
       if request
-        own_reference = "<b>AD #{format_request_number(request['id'])}</b>"
+        own_reference = "<b>#{format_request_number(request['id'])}</b>"
         visit = request['visit']
         own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
         own_reference += "<br><span class='note'>#{data['offerNumber']}</span>"
@@ -145,7 +145,7 @@ module DocumentGenerator
     def generate_header_reference(data)
       request = data['offer']['request']
       if request
-        reference = "AD #{format_request_number(request['id'])}"
+        reference = "#{format_request_number(request['id'])}"
         visit = request['visit']
         reference += " #{visit['visitor']}" if visit and visit['visitor']
         reference

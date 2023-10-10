@@ -39,12 +39,12 @@ module DocumentGenerator
 
     def generate(data)
       deposit_invoice = fetch_invoice(@resource_id)
-      customer = find_included_record_by_type(data, 'customer-snapshots')
-      contact = find_included_record_by_type(data, 'contact-snapshots')
-      building = find_included_record_by_type(data, 'building-snapshots')
-      request = find_included_record_by_type(data, 'requests')
-      offer = find_included_record_by_type(data, 'offers')
-      order = find_included_record_by_type(data, 'orders')
+      _case = fetch_case(deposit_invoice[:case_uri])
+      request = fetch_request(_case[:request][:id]) if _case[:request]
+      intervention = fetch_intervention(_case[:intervention][:id]) if _case[:intervention]
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
 
       init_template(deposit_invoice)
 
@@ -54,32 +54,28 @@ module DocumentGenerator
       invoice_date = generate_invoice_date(deposit_invoice)
       fill_placeholder('DATE', invoice_date)
 
-      customer_number = customer['attributes']['number'].to_s
-      fill_placeholder('CUSTOMER_NUMBER', customer_number)
+      fill_placeholder('CUSTOMER_NUMBER', customer[:number])
 
-      own_reference = generate_own_reference(request, offer)
+      own_reference = generate_own_reference(request, intervention)
       fill_placeholder('OWN_REFERENCE', own_reference, encode: true)
 
-      ext_reference = generate_ext_reference(deposit_invoice)
+      ext_reference = generate_ext_reference(_case)
       fill_placeholder('EXT_REFERENCE', ext_reference, encode: true)
 
-      building_address = find_related_record(building, data, 'address')
-      building_lines = generate_embedded_address(building, building_address, 'building')
+      building_lines = generate_address(building, 'building')
       fill_placeholder('BUILDING', building_lines, encode: true)
 
-      customer_address = find_related_record(customer, data, 'address')
-      addresslines = generate_embedded_address(customer, customer_address)
+      addresslines = generate_address(customer)
       fill_placeholder('ADDRESSLINES', addresslines, encode: true)
 
-      contactlines = generate_embedded_contactlines(customer, contact)
+      contactlines = generate_contactlines(customer, contact)
       fill_placeholder('CONTACTLINES', contactlines, encode: true)
 
-      request_number = generate_request_number(order)
-      fill_placeholder('REQUEST_NUMBER', request_number)
+      fill_placeholder('REQUEST_NUMBER', format_request_number(request[:number]))
 
       fill_placeholder('OUTRO', deposit_invoice[:outro] || '', encode: true)
 
-      pricing = generate_pricing(deposit_invoice, order)
+      pricing = generate_pricing(deposit_invoice, _case[:order][:uri])
       fill_placeholder('INVOICELINES', pricing[:invoicelines], encode: true)
       fill_placeholder('VAT_RATE', format_vat_rate(pricing[:vat_rate]))
       fill_placeholder('TOTAL_NET_PRICE', format_decimal(pricing[:total_net_price]))
@@ -106,39 +102,17 @@ module DocumentGenerator
       write_file
     end
 
-    def generate_own_reference(request, offer)
-      if request and offer
-        own_reference = "<b>AD #{format_request_number(request['id'])}</b>"
-        if request['attributes']['visitor']
-          employee = fetch_employee_by_name(request['attributes']['visitor'])
-          own_reference += " <b>#{employee[:initials]}</b>" if employee
-        end
-        own_reference += "<br><span class='note'>#{offer['attributes']['number']} #{offer['attributes']['document-version']}</span>"
-        own_reference
-      else
-        hide_element('references--own_reference')
-      end
-    end
-
-    def generate_request_number(request)
-      if request
-        "<b>AD #{format_request_number(request['id'])}</b>"
-      else
-        hide_element('introduction--reference')
-      end
-    end
-
     def generate_bank_reference(invoice)
       base = if invoice[:is_credit_note] then 8000000000 else 5000000000 end
       generate_bank_reference_with_base(base, invoice[:number].to_i)
     end
 
-    def generate_pricing(deposit_invoice, order)
+    def generate_pricing(deposit_invoice, order_uri)
       invoicelines = []
       prices = []
 
-      if order
-        solutions = fetch_invoicelines(order_id: order['id'])
+      if order_uri
+        solutions = fetch_invoicelines(order_uri: order_uri)
         solutions.each do |invoiceline|
           prices << invoiceline[:amount]
           line = "<div class='invoiceline'>"

@@ -42,9 +42,6 @@ post '/documents/visit-summary' do
 end
 
 post '/requests/:id/documents' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
   generator = DocumentGenerator::VisitReport.new id: params['id']
   path = generator.generate
 
@@ -180,11 +177,8 @@ post '/documents/production-ticket-watermark' do
 end
 
 post '/invoices/:id/documents' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
   id = params['id']
-  data = json_body['data']
+  data = @json_body['data']
   language = data['attributes']['language']
 
   generator = DocumentGenerator::InvoiceDocument.new id: id, language: language
@@ -196,11 +190,8 @@ post '/invoices/:id/documents' do
 end
 
 post '/deposit-invoices/:id/documents' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
   id = params['id']
-  data = json_body['data']
+  data = @json_body['data']
   language = data['attributes']['language']
 
   generator = DocumentGenerator::DepositInvoiceDocument.new id: id, language: language
