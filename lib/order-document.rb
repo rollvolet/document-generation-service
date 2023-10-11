@@ -1,90 +1,83 @@
 require 'wicked_pdf'
-require_relative './htmlentities'
-require_relative './helpers'
 require_relative './sparql_queries'
+require_relative './document'
 
 module DocumentGenerator
-  class OrderDocument
-
-    include DocumentGenerator::Helpers
-
-    def initialize
-      @inline_css = ''
+  class OrderDocument < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/6d080a6b-41f1-45f1-9698-7cbd3c846494'
     end
 
-    def generate(path, data)
-      coder = HTMLEntities.new
+    def init_template request
+      request_ref = generate_request_reference request
 
-      language = select_language(data)
-      template_path = select_template(data, language)
-      html = File.open(template_path, 'rb') { |file| file.read }
-
-      date = format_date_object(DateTime.now)
-      html.gsub! '<!-- {{DATE}} -->', date
-
-      expected_date = generate_expected_date(data)
-      html.gsub! '<!-- {{EXPECTED_DATE}} -->', expected_date
-
-      required_date = generate_required_date(data)
-      html.gsub! '<!-- {{REQUIRED_DATE}} -->', required_date
-
-      own_reference = coder.encode(generate_own_reference(data), :named)
-      html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
-
-      ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
-
-      building = coder.encode(generate_building(data), :named)
-      html.gsub! '<!-- {{BUILDING}} -->', building
-
-      contactlines = coder.encode(generate_contactlines(data), :named)
-      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
-
-      addresslines = coder.encode(generate_addresslines(data), :named)
-      html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
-
-      pricing = generate_pricing(data, language)
-      html.gsub! '<!-- {{ORDERLINES}} -->', coder.encode(pricing[:orderlines], :named)
-      html.gsub! '<!-- {{TOTAL_NET_ORDER_PRICE}} -->', format_decimal(pricing[:total_net_order_price])
-
-      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
-
-      header_path = select_header(data, language)
-      header_html = if header_path then File.open(header_path, 'rb') { |file| file.read } else '' end
-      header_html.gsub! '<!-- {{HEADER_REFERENCE}} -->', generate_header_reference(data)
-
-      footer_path = select_footer(data, language)
-      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
-
-      document_title = document_title(data, language)
-
-      write_to_pdf(path, html, header: { content: header_html }, footer: { content: footer_html }, title: document_title)
-    end
-
-    def select_header(data, language)
-      if language == 'FRA'
-        ENV['ORDER_HEADER_TEMPLATE_FR'] || '/templates/bestelbon-header-fr.html'
+      if @language == 'FRA'
+        template_path = ENV['ORDER_TEMPLATE_FR'] || '/templates/bestelbon-fr.html'
+        header_path = ENV['ORDER_HEADER_TEMPLATE_FR'] || '/templates/bestelbon-header-fr.html'
+        @document_title = "Bon de commande #{request_ref}"
       else
-        ENV['ORDER_HEADER_TEMPLATE_NL'] || '/templates/bestelbon-header-nl.html'
+        template_path = ENV['ORDER_TEMPLATE_NL'] || '/templates/bestelbon-nl.html'
+        header_path = ENV['ORDER_HEADER_TEMPLATE_NL'] || '/templates/bestelbon-header-nl.html'
+        @document_title = "Bestelbon #{request_ref}"
       end
+
+      @html = File.open(template_path, 'rb') { |file| file.read }
+      @header = if header_path then File.open(header_path, 'rb') { |f| f.read } else '' end
+      footer_path = select_footer(nil, @language)
+      @footer = if footer_path then File.open(footer_path, 'rb') { |f| f.read } else '' end
     end
 
-    def select_template(data, language)
-      if language == 'FRA'
-        ENV['ORDER_TEMPLATE_FR'] || '/templates/bestelbon-fr.html'
+    def generate
+      order = fetch_order(@resource_id)
+      _case = fetch_case(order[:case_uri])
+      request = fetch_request(_case[:request][:id]) if _case[:request]
+      offer = fetch_offer(_case[:offer][:id]) if _case[:offer]
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
+
+      init_template(request)
+
+      fill_placeholder('DATE', format_date(order[:date]))
+
+      if order[:expected_date]
+        fill_placeholder('EXPECTED_DATE', format_date(order[:expected_date]))
       else
-        ENV['ORDER_TEMPLATE_NL'] || '/templates/bestelbon-nl.html'
+        hide_element('expected-date')
       end
+
+      if order[:required_date]
+        fill_placeholder('REQUIRED_DATE', format_date(order[:required_date]))
+      else
+        hide_element('required-date')
+      end
+
+      own_reference = generate_offer_reference(offer, request)
+      fill_placeholder('OWN_REFERENCE', own_reference, encode: true)
+
+      ext_reference = generate_ext_reference(_case)
+      fill_placeholder('EXT_REFERENCE', ext_reference, encode: true)
+
+      building_lines = generate_address(building, 'building')
+      fill_placeholder('BUILDING', building_lines, encode: true)
+
+      contactlines = generate_contactlines(customer: customer, contact: contact)
+      fill_placeholder('CONTACTLINES', contactlines, encode: true)
+
+      addresslines = generate_address(customer)
+      fill_placeholder('ADDRESSLINES', addresslines, encode: true)
+
+      pricing = generate_pricing(order)
+      fill_placeholder('ORDERLINES', pricing[:orderlines], encode: true)
+      fill_placeholder('TOTAL_NET_ORDER_PRICE', format_decimal(pricing[:total_net_order_price]), encode: true)
+
+      upload_file order[:uri]
+      @path
     end
 
-    def document_title(data, language)
-      reference = generate_header_reference(data)
-      document_type = if language == 'FRA' then 'Bon de commande' else 'Bestelbon' end
-      "#{document_type} #{reference}"
-    end
-
-    def generate_pricing(data, language)
-      solutions = fetch_invoicelines(order_id: data['id'])
+    def generate_pricing(order)
+      solutions = fetch_invoicelines(order_uri: order[:uri])
       orderlines = []
       prices = []
 
@@ -99,7 +92,7 @@ module DocumentGenerator
         vat_rate = "#{format_vat_rate(invoiceline[:vat_rate])}%"
         if invoiceline[:vat_code] == 'm'
           vat_rate = ''
-          vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
+          vat_note_css_class = if @language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end
         line += "  <div class='col col-3 #{vat_note_css_class}'>#{vat_rate}</div>"
         line += "</div>"
@@ -112,46 +105,6 @@ module DocumentGenerator
         orderlines: orderlines.join,
         total_net_order_price: total_net_order_price
       }
-    end
-
-    def generate_expected_date(data)
-      if data['expectedDate']
-        format_date(data['expectedDate'])
-      else
-        hide_element('expected-date')
-      end
-    end
-
-    def generate_required_date(data)
-      if data['requiredDate']
-        format_date(data['requiredDate'])
-      else
-        hide_element('required-date')
-      end
-    end
-
-    def generate_own_reference(data)
-      request = data['offer']['request']
-      if request
-        own_reference = "<b>#{format_request_number(request['id'])}</b>"
-        visit = request['visit']
-        own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
-        own_reference += "<br><span class='note'>#{data['offerNumber']}</span>"
-      else
-        hide_element('references--own_reference')
-      end
-    end
-
-    def generate_header_reference(data)
-      request = data['offer']['request']
-      if request
-        reference = "#{format_request_number(request['id'])}"
-        visit = request['visit']
-        reference += " #{visit['visitor']}" if visit and visit['visitor']
-        reference
-      else
-        ''
-      end
     end
   end
 end

@@ -154,6 +154,13 @@ module DocumentGenerator
       end
     end
 
+    def generate_offer_reference(offer, request)
+      own_reference = generate_own_reference(request: request)
+      version = if offer[:document_version] == 'v1' then '' else offer[:document_version] end
+      own_reference += "<br><span class='note'>#{offer[:number]} #{version}</span>"
+      own_reference
+    end
+
     def generate_ext_reference(data)
       if data['reference']
         data['reference']

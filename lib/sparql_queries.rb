@@ -441,6 +441,40 @@ def fetch_offer(id)
   end
 end
 
+def fetch_order(id)
+  query = %{
+    PREFIX dct: <http://purl.org/dc/terms/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX p2poDocument: <https://purl.org/p2p-o/document#>
+    PREFIX tmo: <http://www.semanticdesktop.org/ontologies/2008/05/20/tmo#>
+
+    SELECT ?uri ?date ?case ?expected_date ?required_date
+    WHERE {
+      ?uri a p2poDocument:PurchaseOrder ;
+        mu:uuid #{id.sparql_escape} ;
+        dct:issued ?date .
+      ?case ext:order ?uri .
+      OPTIONAL { ?uri tmo:targetTime ?expected_date . }
+      OPTIONAL { ?uri tmo:dueDate ?required_date . }
+    } LIMIT 1
+  }
+  solution = Mu::query(query).first
+
+  if solution
+    {
+      uri: solution[:uri].value,
+      id: id,
+      date: solution[:date].value,
+      expected_date: solution[:expected_date]&.value,
+      required_date: solution[:required_date]&.value,
+      case_uri: solution[:case].value
+    }
+  else
+    nil
+  end
+end
+
 def fetch_invoice(invoice_id)
   query = %{
     PREFIX schema: <http://schema.org/>
