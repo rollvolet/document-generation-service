@@ -56,21 +56,9 @@ post '/interventions/:id/documents' do
   send_file path
 end
 
-post '/documents/offer' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  # Workaround to embed visitor initals in the offer object
-  data = json_body['offer']
-  if data['request']
-    data['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-offerte.pdf"
-
-  generator = DocumentGenerator::OfferDocument.new
-  generator.generate(path, data)
+post '/offers/:id/documents' do
+  generator = DocumentGenerator::OfferDocument.new id: params['id'], user: @user
+  path = generator.generate
 
   send_file path
 end

@@ -56,12 +56,11 @@ module DocumentGenerator
       invoice_number = generate_invoice_number(deposit_invoice)
       fill_placeholder('NUMBER', invoice_number)
 
-      invoice_date = generate_invoice_date(deposit_invoice)
-      fill_placeholder('DATE', invoice_date)
+      fill_placeholder('DATE', format_date(deposit_invoice[:date]))
 
       fill_placeholder('CUSTOMER_NUMBER', customer[:number])
 
-      own_reference = generate_own_reference(request, intervention)
+      own_reference = generate_own_reference(request: request, intervention: intervention)
       fill_placeholder('OWN_REFERENCE', own_reference, encode: true)
 
       ext_reference = generate_ext_reference(_case)

@@ -95,7 +95,7 @@ module DocumentGenerator
         print_name = generate_print_name(contact)
         name = if customer then "Contact: #{print_name}" else print_name end
         contactlines += "<div class='contactline contactline--name'>#{name}</div>"
-      elsif customer
+      elsif customer and address
         contactlines += "<div class='contactline contactline--name'>#{generate_print_name(customer)}</div>"
       end
 
@@ -107,15 +107,17 @@ module DocumentGenerator
         contactlines += "<div class='contactline contactline--address'>#{addresslines}</div>" if addresslines
       end
 
-      contactlines += "<div class='contactline contactline--telephones'>"
-      telephones = if contact then fetch_telephones(contact[:uri]) else fetch_telephones(customer[:uri]) end
-      top_telephones = telephones.first(2)
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel[:prefix], tel[:value])
-        note = if tel[:note] then "(#{tel[:note]})" else '' end
-        contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
+      if customer or contact
+        contactlines += "<div class='contactline contactline--telephones'>"
+        telephones = if contact then fetch_telephones(contact[:uri]) else fetch_telephones(customer[:uri]) end
+        top_telephones = telephones.first(2)
+        top_telephones.each do |tel|
+          formatted_tel = format_telephone(tel[:prefix], tel[:value])
+          note = if tel[:note] then "(#{tel[:note]})" else '' end
+          contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
+        end
+        contactlines += "</div>"
       end
-      contactlines += "</div>"
 
       contactlines
     end
@@ -136,11 +138,15 @@ module DocumentGenerator
       formatted_emails
     end
 
-    def generate_own_reference(request, intervention)
+    def generate_request_reference(request)
+      request_number = format_request_number(request[:number])
+      request_number += " #{request[:visitor][:initials]}" if request.dig(:visitor, :initials)
+      request_number
+    end
+
+    def generate_own_reference(request: nil, intervention: nil)
       if request
-        request_number = format_request_number(request[:number])
-        request_number += " #{request[:visitor][:initials]}" if request.dig(:visitor, :initials)
-        "<b>#{request_number}</b>"
+        "<b>#{generate_request_reference(request)}</b>"
       elsif intervention
         "<b>#{format_intervention_number(intervention[:number])}</b>"
       else

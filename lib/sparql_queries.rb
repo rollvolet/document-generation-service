@@ -402,6 +402,45 @@ def fetch_intervention(id)
   end
 end
 
+def fetch_offer(id)
+  query = %{
+    PREFIX schema: <http://schema.org/>
+    PREFIX crm: <http://data.rollvolet.be/vocabularies/crm/>
+    PREFIX dct: <http://purl.org/dc/terms/>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+    SELECT ?uri ?date ?number ?case ?document_version ?document_intro ?document_outro
+    WHERE {
+      ?uri a schema:Offer ;
+        mu:uuid #{id.sparql_escape} ;
+        dct:issued ?date ;
+        schema:identifier ?number .
+      ?case ext:offer ?uri .
+      OPTIONAL { ?uri owl:versionInfo ?document_version . }
+      OPTIONAL { ?uri crm:documentIntro ?document_intro . }
+      OPTIONAL { ?uri crm:documentOutro ?document_outro . }
+    } LIMIT 1
+  }
+  solution = Mu::query(query).first
+
+  if solution
+    {
+      uri: solution[:uri].value,
+      id: id,
+      date: solution[:date].value,
+      number: solution[:number].value,
+      document_version: solution[:document_version]&.value,
+      document_intro: solution[:document_intro]&.value,
+      document_outro: solution[:document_outro]&.value,
+      case_uri: solution[:case].value
+    }
+  else
+    nil
+  end
+end
+
 def fetch_invoice(invoice_id)
   query = %{
     PREFIX schema: <http://schema.org/>
@@ -540,8 +579,7 @@ def fetch_emails(record_uri)
   end
 end
 
-def fetch_offerlines(id)
-  offer_uri = get_resource_uri('offers', id)
+def fetch_offerlines(offer_uri)
   query = %{
     PREFIX schema: <http://schema.org/>
     PREFIX dct: <http://purl.org/dc/terms/>
@@ -565,7 +603,7 @@ def fetch_offerlines(id)
   solutions.map do |solution|
     {
       uri: solution[:offerline].value,
-      description: if solution[:description] then solution[:description].value end,
+      description: solution[:description]&.value,
       amount: solution[:amount].value.to_f,
       vat_rate: solution[:rate].value.to_i,
       vat_code: solution[:vatCode].value

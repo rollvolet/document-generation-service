@@ -1,91 +1,72 @@
 require 'wicked_pdf'
-require_relative './htmlentities'
-require_relative './helpers'
 require_relative './sparql_queries'
+require_relative './document'
 
 module DocumentGenerator
-  class OfferDocument
-
-    include DocumentGenerator::Helpers
-
-    def initialize
-      @inline_css = ''
+  class OfferDocument < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/51577f19-9d90-4abf-a0d2-187770f76fc9'
     end
 
-    def generate(path, data)
-      coder = HTMLEntities.new
+    def init_template request
+      request_ref = generate_request_reference request
 
-      language = select_language(data)
-      template_path = select_template(data, language)
-      html = File.open(template_path, 'rb') { |file| file.read }
-
-      offer_date = generate_offer_date(data)
-      html.gsub! '<!-- {{DATE}} -->', offer_date
-
-      own_reference = coder.encode(generate_own_reference(data), :named)
-      html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
-
-      ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
-
-      building = coder.encode(generate_building(data), :named)
-      html.gsub! '<!-- {{BUILDING}} -->', building
-
-      contactlines = coder.encode(generate_contactlines(data), :named)
-      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
-
-      addresslines = coder.encode(generate_addresslines(data), :named)
-      html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
-
-      html.gsub! '<!-- {{INTRO}} -->', coder.encode(data['documentIntro'], :named) if data['documentIntro']
-
-      offerlines = coder.encode(generate_offerlines(data, language), :named)
-      html.gsub! '<!-- {{OFFERLINES}} -->', offerlines
-
-      html.gsub! '<!-- {{CONDITIONS}} -->', coder.encode(data['documentOutro'], :named) if data['documentOutro']
-
-      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
-
-      header_path = select_header(data, language)
-      header_html = if header_path then File.open(header_path, 'rb') { |file| file.read } else '' end
-      header_html.gsub! '<!-- {{HEADER_REFERENCE}} -->', generate_header_reference(data)
-
-      footer_path = select_footer(data, language)
-      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
-
-      document_title = document_title(data, language)
-
-      write_to_pdf(path, html, header: { content: header_html }, footer: { content: footer_html }, title: document_title)
-    end
-
-    def select_header(data, language)
-      if language == 'FRA'
-        ENV['OFFER_HEADER_TEMPLATE_FR'] || '/templates/offerte-header-fr.html'
+      if @language == 'FRA'
+        template_path = ENV['OFFER_TEMPLATE_FR'] || '/templates/offerte-fr.html'
+        header_path = ENV['OFFER_HEADER_TEMPLATE_FR'] || '/templates/offerte-header-fr.html'
+        @document_title = "Offre #{request_ref}"
       else
-        ENV['OFFER_HEADER_TEMPLATE_NL'] || '/templates/offerte-header-nl.html'
+        template_path = ENV['OFFER_TEMPLATE_NL'] || '/templates/offerte-nl.html'
+        header_path = ENV['OFFER_HEADER_TEMPLATE_NL'] || '/templates/offerte-header-nl.html'
+        @document_title = "Offerte #{request_ref}"
       end
+
+      @html = File.open(template_path, 'rb') { |file| file.read }
+      @header = if header_path then File.open(header_path, 'rb') { |f| f.read } else '' end
+      footer_path = select_footer(nil, @language)
+      @footer = if footer_path then File.open(footer_path, 'rb') { |f| f.read } else '' end
     end
 
-    def select_template(data, language)
-      if language == 'FRA'
-        ENV['OFFER_TEMPLATE_FR'] || '/templates/offerte-fr.html'
-      else
-        ENV['OFFER_TEMPLATE_NL'] || '/templates/offerte-nl.html'
-      end
+    def generate
+      offer = fetch_offer(@resource_id)
+      _case = fetch_case(offer[:case_uri])
+      request = fetch_request(_case[:request][:id]) if _case[:request]
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
+
+      init_template(request)
+
+      fill_placeholder('DATE', format_date(offer[:date]))
+
+      own_reference = generate_offer_reference(offer, request)
+      fill_placeholder('OWN_REFERENCE', own_reference, encode: true)
+
+      ext_reference = generate_ext_reference(_case)
+      fill_placeholder('EXT_REFERENCE', ext_reference, encode: true)
+
+      building_lines = generate_address(building, 'building')
+      fill_placeholder('BUILDING', building_lines, encode: true)
+
+      contactlines = generate_contactlines(customer: customer, contact: contact)
+      fill_placeholder('CONTACTLINES', contactlines, encode: true)
+
+      addresslines = generate_address(customer)
+      fill_placeholder('ADDRESSLINES', addresslines, encode: true)
+
+      fill_placeholder('INTRO', offer[:document_intro], encode: true) if offer[:document_intro]
+      fill_placeholder('CONDITIONS', offer[:document_outro], encode: true) if offer[:document_outro]
+
+      offerlines = generate_offerlines(offer)
+      fill_placeholder('OFFERLINES', offerlines, encode: true)
+
+      upload_file offer[:uri]
+      @path
     end
 
-    def document_title(data, language)
-      reference = generate_header_reference(data)
-      document_type = if language == 'FRA' then 'Offre' else 'Offerte' end
-      "#{document_type} #{reference}"
-    end
-
-    def generate_offer_date(data)
-      if data['offerDate'] then format_date(data['offerDate']) else '' end
-    end
-
-    def generate_offerlines(data, language)
-      solutions = fetch_offerlines(data['id'])
+    def generate_offerlines(offer)
+      solutions = fetch_offerlines(offer[:uri])
 
       offerlines = solutions.map do |offerline|
         line = "<div class='offerline'>"
@@ -96,7 +77,7 @@ module DocumentGenerator
         vat_rate = "#{format_vat_rate(offerline[:vat_rate])}%"
         if offerline[:vat_code] == 'm'
           vat_rate = ''
-          vat_note_css_class = if language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
+          vat_note_css_class = if @language == 'FRA' then 'taxfree-fr' else 'taxfree-nl' end
         end
         line += "  <div class='col col-3 #{vat_note_css_class}'>#{vat_rate}</div>"
         line += "</div>"
@@ -105,29 +86,11 @@ module DocumentGenerator
       offerlines.join
     end
 
-    def generate_own_reference(data)
-      request = data['request']
-      if request
-        own_reference = "<b>#{format_request_number(request['id'])}</b>"
-        visit = request['visit']
-        own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
-        version = if data['documentVersion'] == 'v1' then '' else data['documentVersion'] end
-        own_reference += "<br><span class='note'>#{data['number']} #{version}</span>"
-      else
-        hide_element('references--own_reference')
-      end
-    end
-
-    def generate_header_reference(data)
-      request = data['request']
-      if request
-        reference = "#{format_request_number(request['id'])}"
-        visit = request['visit']
-        reference += " #{visit['visitor']}" if visit and visit['visitor']
-        reference
-      else
-        ''
-      end
+    def generate_offer_reference(offer, request)
+      own_reference = generate_own_reference(request: request)
+      version = if offer[:document_version] == 'v1' then '' else offer[:document_version] end
+      own_reference += "<br><span class='note'>#{offer[:number]} #{version}</span>"
+      own_reference
     end
   end
 end
