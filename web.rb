@@ -10,7 +10,6 @@ require_relative 'lib/delivery-note'
 require_relative 'lib/production-ticket'
 require_relative 'lib/invoice-document'
 require_relative 'lib/deposit-invoice-document'
-require_relative 'lib/vat-certificate'
 
 configure :development do
   class WickedPdf # monkey patch useful for debugging
@@ -104,6 +103,26 @@ post '/documents/production-ticket' do
   send_file path
 end
 
+post '/deposit-invoices/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
+
+  generator = DocumentGenerator::DepositInvoiceDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate(data)
+
+  send_file path
+end
+
+post '/invoices/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
+
+  generator = DocumentGenerator::InvoiceDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate(data)
+
+  send_file path
+end
+
 post '/documents/production-ticket-watermark' do
   if params['file']
     tempfile = params['file'][:tempfile]
@@ -128,39 +147,4 @@ post '/documents/production-ticket-watermark' do
   else
     halt 400, { title: 'File is required' }
   end
-end
-
-post '/invoices/:id/documents' do
-  data = @json_body['data']
-  language = data['attributes']['language']
-
-  generator = DocumentGenerator::InvoiceDocument.new id: params['id'], language: language, user: @user
-  path = generator.generate(data)
-
-  send_file path
-end
-
-post '/deposit-invoices/:id/documents' do
-  data = @json_body['data']
-  language = data['attributes']['language']
-
-  generator = DocumentGenerator::DepositInvoiceDocument.new id: params['id'], language: language, user: @user
-  path = generator.generate(data)
-
-  send_file path
-end
-
-post '/documents/certificate' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  data = json_body['invoice']
-
-  id = data['id']
-  path = "/tmp/#{id}-attest.pdf"
-
-  generator = DocumentGenerator::VatCertificate.new
-  generator.generate(path, data)
-
-  send_file path
 end
