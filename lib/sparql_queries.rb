@@ -518,6 +518,7 @@ def fetch_invoice(invoice_id)
       invoice_date: solution[:date].value,
       number: solution[:number].value,
       amount: solution[:amount].value.to_f,
+      date: solution[:date]&.value,
       due_date: solution[:dueDate]&.value,
       payment_date: solution[:paymentDate]&.value,
       paid_deposits: solution[:paidDeposits]&.value.to_f,
