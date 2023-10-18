@@ -103,7 +103,7 @@ module DocumentGenerator
         hide_element('btw-verlegd') unless deposit_invoice[:vat_code] == 'm'
       end
 
-      upload_file deposit_invoice[:uri]
+      generate_and_upload_file deposit_invoice[:uri]
       @path
     end
 

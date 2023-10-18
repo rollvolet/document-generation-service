@@ -72,7 +72,7 @@ module DocumentGenerator
       fill_placeholder('ORDERLINES', pricing[:orderlines], encode: true)
       fill_placeholder('TOTAL_NET_ORDER_PRICE', format_decimal(pricing[:total_net_order_price]), encode: true)
 
-      upload_file order[:uri]
+      generate_and_upload_file order[:uri]
       @path
     end
 

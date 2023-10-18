@@ -26,6 +26,9 @@ module DocumentGenerator
       template.gsub! "<!-- {{#{placeholder}}} -->", encoded_value
     end
 
+    ###
+    ## Writes the current state of the generator to a PDF document at the given path
+    ###
     def write_file path = @path
       write_to_pdf(
         path,
@@ -37,21 +40,50 @@ module DocumentGenerator
       path
     end
 
-    def upload_file derived_from = nil
-      file_name = File.split(@path).last
-      file_resource_uri = @path.gsub('/share/', 'share://')
-
+    ###
+    ## Writes the generated HTML to a PDF document,
+    ## inserts it in the triplestore and moves it to the upload location
+    ###
+    def generate_and_upload_file derived_from = nil
       # Write PDF to a temporary location (such that it will not be picked up by file upload service yet)
+      file_name = File.split(@path).last
       tmp_path = "/tmp/#{file_name}"
       write_file tmp_path
 
       # Insert file in triplestore
+      insert_file_in_triplestore tmp_path, derived_from
+
+      # Move PDF to final destination
+      FileUtils.mv tmp_path, @path
+    end
+
+    ###
+    ## Inserts the file at the given path in the triplestore
+    ## and moves it to the upload location
+    ###
+    def upload_file tmp_path, derived_from = nil
+      # Insert file in triplestore
+      insert_file_in_triplestore tmp_path, derived_from
+
+      # Move PDF to final destination
+      FileUtils.mv tmp_path, @path
+    end
+
+
+    ###
+    ## PRIVATE METHODSy
+    ###
+
+    def insert_file_in_triplestore path, derived_from = nil
+      file_resource_uri = @path.gsub('/share/', 'share://')
+
       upload_resource_uuid = Mu::generate_uuid()
       upload_resource_name = "#{@document_title.gsub(/\W/, "_")}.pdf"
       upload_resource_uri = get_resource_uri 'files', upload_resource_uuid
       file_extension = 'pdf'
       file_format = 'application/pdf'
-      file_size = File.size(tmp_path)
+      file_size = File.size(path)
+      file_name = File.split(path).last
 
       now = DateTime.now
 
@@ -90,14 +122,8 @@ module DocumentGenerator
             dct:creator #{Mu::sparql_escape_uri(@user)} .
         }
       }
-
-      # Move PDF to final destination
-      FileUtils.mv tmp_path, @path
     end
 
-    ###
-    ## Private
-    ###
     def write_to_pdf(path, html, options = {})
       fill_placeholder('INLINE_CSS', @inline_css)
 
@@ -122,8 +148,8 @@ module DocumentGenerator
       pdf = WickedPdf.new.pdf_from_string(html, options)
 
       # Write HTML to a document for debugging purposes
-      # html_path = path.sub '.pdf', '.html'
-      # File.open(html_path, 'wb') { |file| file << html }
+      html_path = path.sub '.pdf', '.html'
+      File.open(html_path, 'wb') { |file| file << html }
       File.open(path, 'wb') { |file| file << pdf }
     end
 

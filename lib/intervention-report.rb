@@ -80,7 +80,7 @@ module DocumentGenerator
 
       fill_placeholder('DESCRIPTION', intervention[:description] || '', encode: true)
 
-      upload_file intervention[:uri]
+      generate_and_upload_file intervention[:uri]
       @path
     end
   end

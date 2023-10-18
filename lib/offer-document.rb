@@ -61,7 +61,7 @@ module DocumentGenerator
       offerlines = generate_offerlines(offer)
       fill_placeholder('OFFERLINES', offerlines, encode: true)
 
-      upload_file offer[:uri]
+      generate_and_upload_file offer[:uri]
       @path
     end
 

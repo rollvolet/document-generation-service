@@ -1,101 +1,101 @@
 require 'wicked_pdf'
 require 'combine_pdf'
-require_relative './htmlentities'
-require_relative './helpers'
 require_relative './sparql_queries'
+require_relative './document'
 
 module DocumentGenerator
-  class DeliveryNote
+  class DeliveryNote < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/dcf1aa80-6b1b-4423-8ce1-4df7ffe85684'
+    end
 
-    include DocumentGenerator::Helpers
+    def init_template request
+      request_ref = generate_request_reference request
 
-    def generate(path, data)
-      id = data['id']
-      path_supplier = "/tmp/#{id}-delivery-note-supplier.pdf"
-      path_customer = "/tmp/#{id}-delivery-note-customer.pdf"
+      if @language == 'FRA'
+        template_path = ENV['DELIVERY_NOTE_TEMPLATE_FR'] || '/templates/leveringsbon-fr.html'
+        header_path = ENV['DELIVERY_NOTE_HEADER_TEMPLATE_FR'] || '/templates/leveringsbon-header-fr.html'
+        @document_title = "Bon de livraison #{request_ref}"
+      else
+        template_path = ENV['DELIVERY_NOTE_TEMPLATE_NL'] || '/templates/leveringsbon-nl.html'
+        header_path = ENV['DELIVERY_NOTE_HEADER_TEMPLATE_NL'] || '/templates/leveringsbon-header-nl.html'
+        @document_title = "Leveringsbon #{request_ref}"
+      end
 
-      language = select_language(data)
+      @html = File.read(template_path)
+      @header = if header_path then File.read(header_path) else '' end
+      footer_path = select_footer(nil, @language)
+      @footer = if footer_path then File.read(footer_path) else '' end
+    end
 
-      @inline_css = ''
-      generate_delivery_note(path_supplier, data, language, 'supplier')
-      @inline_css = ''
-      generate_delivery_note(path_customer, data, language, 'customer')
+    def generate
+      order = fetch_order(@resource_id)
+      _case = fetch_case(order[:case_uri])
+      request = fetch_request(_case[:request][:id]) if _case[:request]
+      offer = fetch_offer(_case[:offer][:id]) if _case[:offer]
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
 
+      init_template(request)
+
+      # Store initial state, such that we can reset to this state for each scope
+      initial_html = @html.clone
+      Mu::log.info "Initial HTML template is #{initial_html}"
+      initial_inline_css = @inline_css
+
+      tmp_paths = ['supplier', 'customer'].map do |scope|
+        tmp_path = "/tmp/#{@resource_id}-delivery-note-#{scope}.pdf"
+        # Reset state
+        @inline_css = initial_inline_css
+        @html = initial_html.clone
+
+        Mu::log.info "HTML for #{scope} is now #{@html}"
+
+        # Generate document for scope
+        # This will modify @html and @inline_css
+        own_reference = generate_offer_reference(offer, request)
+        fill_placeholder('OWN_REFERENCE', own_reference, encode: true)
+
+        ext_reference = generate_ext_reference(_case)
+        fill_placeholder('EXT_REFERENCE', ext_reference, encode: true)
+
+        building_lines = generate_address(building, 'building')
+        fill_placeholder('BUILDING', building_lines, encode: true)
+
+        contactlines = generate_contactlines(customer: customer, contact: contact)
+        fill_placeholder('CONTACTLINES', contactlines, encode: true)
+
+        addresslines = generate_address(customer)
+        fill_placeholder('ADDRESSLINES', addresslines, encode: true)
+
+        deliverylines = generate_deliverylines(order)
+        fill_placeholder('DELIVERYLINES', deliverylines, encode: true)
+
+        display_element("scope--#{scope}")
+        Mu::log.info "Inline CSS for #{scope} is now #{@inline_css}"
+
+        # Write current state to tmp document
+        write_file tmp_path
+      end
+
+      # Merge all scoped documents into one PDF document
       merged_pdf = CombinePDF.new
-      merged_pdf << CombinePDF.load(path_supplier)
-      merged_pdf << CombinePDF.load(path_customer)
-
-      document_title = document_title(data, language)
-      merged_pdf.info[:Title] = document_title # See https://github.com/boazsegev/combine_pdf/issues/150
-      merged_pdf.save path
-
-      File.delete(path_supplier)
-      File.delete(path_customer)
-    end
-
-    def generate_delivery_note(path, data, language, scope)
-      coder = HTMLEntities.new
-
-      template_path = select_template(data, language)
-      html = File.open(template_path, 'rb') { |file| file.read }
-
-      own_reference = coder.encode(generate_own_reference(data), :named)
-      html.gsub! '<!-- {{OWN_REFERENCE}} -->', own_reference
-
-      ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
-
-      building = coder.encode(generate_building(data), :named)
-      html.gsub! '<!-- {{BUILDING}} -->', building
-
-      contactlines = coder.encode(generate_contactlines(data), :named)
-      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
-
-      addresslines = coder.encode(generate_addresslines(data), :named)
-      html.gsub! '<!-- {{ADDRESSLINES}} -->', addresslines
-
-      deliverylines = coder.encode(generate_deliverylines(data, language), :named)
-      html.gsub! '<!-- {{DELIVERYLINES}} -->', deliverylines
-
-      display_element("scope--#{scope}")
-      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
-
-      header_path = select_header(data, language)
-      header_html = if header_path then File.open(header_path, 'rb') { |file| file.read } else '' end
-      header_html.gsub! '<!-- {{HEADER_REFERENCE}} -->', generate_header_reference(data)
-
-      footer_path = select_footer(data, language)
-      footer_html = if footer_path then File.open(footer_path, 'rb') { |file| file.read } else '' end
-
-      document_title = document_title(data, language)
-
-      write_to_pdf(path, html, header: { content: header_html }, footer: { content: footer_html }, title: document_title)
-    end
-
-    def select_header(data, language)
-      if language == 'FRA'
-        ENV['DELIVERY_NOTE_HEADER_TEMPLATE_FR'] || '/templates/leveringsbon-header-fr.html'
-      else
-        ENV['DELIVERY_NOTE_HEADER_TEMPLATE_NL'] || '/templates/leveringsbon-header-nl.html'
+      tmp_paths.each do |path|
+        merged_pdf << CombinePDF.load(path)
+        # File.delete(path)
       end
+      merged_pdf.info[:Title] = @document_title # See https://github.com/boazsegev/combine_pdf/issues/150
+      merged_path = "/tmp/#{@resource_id}-delivery-note-merged.pdf"
+      merged_pdf.save merged_path
+
+      upload_file merged_path, order[:uri]
+      @path
     end
 
-    def select_template(data, language)
-      if language == 'FRA'
-        ENV['DELIVERY_NOTE_TEMPLATE_FR'] || '/templates/leveringsbon-fr.html'
-      else
-        ENV['DELIVERY_NOTE_TEMPLATE_NL'] || '/templates/leveringsbon-nl.html'
-      end
-    end
-
-    def document_title(data, language)
-      reference = generate_header_reference(data)
-      document_type = if language == 'FRA' then 'Bon de livraison' else 'Leveringsbon' end
-      "#{document_type} #{reference}"
-    end
-
-    def generate_deliverylines(data, language)
-      solutions = fetch_invoicelines(order_id: data['id'])
+    def generate_deliverylines(order)
+      solutions = fetch_invoicelines(order_uri: order[:uri])
       deliverylines = solutions.map do |invoiceline|
         line = "<div class='deliveryline'>"
         line += "  <div class='col col-1'>#{invoiceline[:description]}</div>"
@@ -103,30 +103,6 @@ module DocumentGenerator
         line
       end
       deliverylines.join
-    end
-
-    def generate_own_reference(data)
-      request = data['offer']['request']
-      if request
-        own_reference = "<b>#{format_request_number(request['id'])}</b>"
-        visit = request['visit']
-        own_reference += " <b>#{visit['visitor']}</b>" if visit and visit['visitor']
-        own_reference += "<br><span class='note'>#{data['offerNumber']}</span>"
-      else
-        hide_element('references--own_reference')
-      end
-    end
-
-    def generate_header_reference(data)
-      request = data['offer']['request']
-      if request
-        reference = "#{format_request_number(request['id'])}"
-        visit = request['visit']
-        reference += " #{visit['visitor']}" if visit and visit['visitor']
-        reference
-      else
-        ''
-      end
     end
   end
 end

@@ -57,33 +57,31 @@ post '/interventions/:id/documents' do
 end
 
 post '/offers/:id/documents' do
-  generator = DocumentGenerator::OfferDocument.new id: params['id'], user: @user
+  data = @json_body['data']
+  language = data['attributes']['language']
+
+  generator = DocumentGenerator::OfferDocument.new id: params['id'], language: language, user: @user
   path = generator.generate
 
   send_file path
 end
 
 post '/orders/:id/documents' do
-  generator = DocumentGenerator::OrderDocument.new id: params['id'], user: @user
+  data = @json_body['data']
+  language = data['attributes']['language']
+
+  generator = DocumentGenerator::OrderDocument.new id: params['id'], language: language, user: @user
   path = generator.generate
 
   send_file path
 end
 
-post '/documents/delivery-note' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/orders/:id/delivery-notes' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  # Workaround to embed visitor initals in the offer object
-  data = json_body['order']
-  if data['offer'] and data['offer']['request']
-    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-leveringsbon.pdf"
-  generator = DocumentGenerator::DeliveryNote.new
-  generator.generate(path, data)
+  generator = DocumentGenerator::DeliveryNote.new id: params['id'], language: language, user: @user
+  path = generator.generate
 
   send_file path
 end
@@ -133,22 +131,20 @@ post '/documents/production-ticket-watermark' do
 end
 
 post '/invoices/:id/documents' do
-  id = params['id']
   data = @json_body['data']
   language = data['attributes']['language']
 
-  generator = DocumentGenerator::InvoiceDocument.new id: id, language: language, user: @user
+  generator = DocumentGenerator::InvoiceDocument.new id: params['id'], language: language, user: @user
   path = generator.generate(data)
 
   send_file path
 end
 
 post '/deposit-invoices/:id/documents' do
-  id = params['id']
   data = @json_body['data']
   language = data['attributes']['language']
 
-  generator = DocumentGenerator::DepositInvoiceDocument.new id: id, language: language, user: @user
+  generator = DocumentGenerator::DepositInvoiceDocument.new id: params['id'], language: language, user: @user
   path = generator.generate(data)
 
   send_file path
