@@ -35,8 +35,8 @@ module DocumentGenerator
       BASE_URI % { :resource => resource, :id => id }
     end
 
-    def generate_print_name(data)
-      name = ''
+    def generate_print_name(data, include_number: false)
+      name = if include_number then "[#{data[:number]}]" else '' end
       name += data[:honorific_prefix] if data[:honorific_prefix] and data[:print_suffix_in_front]
       name += " #{data[:first_name]}" if data[:first_name] and data[:print_prefix]
       name += " #{data[:last_name]}" if data[:last_name]
@@ -68,13 +68,13 @@ module DocumentGenerator
       end
     end
 
-    def generate_address(record, hide_class = nil)
+    def generate_address(record, hide_class = nil, include_name: true, address_separator: '<br>')
       if record
-        addresslines = "#{generate_print_name(record)}<br>"
+        addresslines = if include_name then "#{generate_print_name(record)}<br>" else "" end
         if record[:address]
           if record[:address][:street]
-            streetlines = record[:address][:street].gsub(/\n/, '<br>')
-            addresslines += "#{streetlines}<br>"
+            streetlines = record[:address][:street].gsub(/\n/, address_separator)
+            addresslines += "#{streetlines}#{address_separator}"
           end
           addresslines += "#{record[:address][:postal_code]} #{record[:address][:city]}" if record[:address][:postal_code] or record[:address][:city]
         end
@@ -229,6 +229,17 @@ module DocumentGenerator
       padded_modulo = '97' if padded_modulo == '00'
       reference = "%012d" % (ref.to_s + padded_modulo)
       "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
+    end
+
+    def generate_delivery_method_label(delivery_method)
+      case delivery_method
+      when 'http://data.rollvolet.be/concepts/e8ac5c18-628f-435a-ac36-3c6704c3ff19'
+        'Te leveren'
+      when 'http://data.rollvolet.be/concepts/89db0214-65d1-444d-9c19-a0e772113b8a'
+        'Te plaatsen'
+      else
+        'Zonder plaatsing'
+      end
     end
 
     def format_request_number(number)

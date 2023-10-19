@@ -10,11 +10,12 @@ module DocumentGenerator
     end
 
     def init_template request
+      request_ref = generate_request_reference request
       template_path = ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'
 
       @html = File.open(template_path, 'rb') { |file| file.read }
 
-      @document_title = "AD#{request[:number]}"
+      @document_title = "Bezoekrapport #{request_ref}"
     end
 
     def generate

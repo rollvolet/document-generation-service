@@ -85,24 +85,6 @@ post '/orders/:id/delivery-notes' do
   send_file path
 end
 
-post '/documents/production-ticket' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  data = json_body['order']
-  # Workaround to embed visitor initals in the offer object
-  if data['offer'] and data['offer']['request']
-    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-productiebon.pdf"
-  generator = DocumentGenerator::ProductionTicket.new
-  generator.generate(path, data)
-
-  send_file path
-end
-
 post '/deposit-invoices/:id/documents' do
   data = @json_body['data']
   language = data['attributes']['language']
@@ -119,6 +101,13 @@ post '/invoices/:id/documents' do
 
   generator = DocumentGenerator::InvoiceDocument.new id: params['id'], language: language, user: @user
   path = generator.generate(data)
+
+  send_file path
+end
+
+post '/cases/:id/production-ticket-templates' do
+  generator = DocumentGenerator::ProductionTicket.new id: params['id'], user: @user
+  path = generator.generate
 
   send_file path
 end

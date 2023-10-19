@@ -1,3 +1,8 @@
+def fetch_uri(id)
+  query = "SELECT ?uri WHERE { ?uri <http://mu.semte.ch/vocabularies/core/uuid> #{id.sparql_escape} . } LIMIT 1"
+  solution = Mu::query(query).first[:uri].value
+end
+
 def fetch_case(case_uri)
   query = %{
     PREFIX schema: <http://schema.org/>
@@ -13,7 +18,7 @@ def fetch_case(case_uri)
     PREFIX gebouw: <https://data.vlaanderen.be/ns/gebouw#>
     PREFIX p2poInvoice: <https://purl.org/p2p-o/invoice#>
     PREFIX p2poDocument: <https://purl.org/p2p-o/document#>
-    SELECT ?identifier ?reference ?comment
+    SELECT ?identifier ?reference ?comment ?delivery_method
            ?customer_uri ?customer_id ?contact_uri ?contact_id ?building_uri ?building_id
            ?intervention_uri ?intervention_id ?request_uri ?request_id ?offer_uri ?offer_id
            ?order_uri ?order_id ?invoice_uri ?invoice_id
@@ -22,6 +27,7 @@ def fetch_case(case_uri)
         dct:identifier ?identifier .
       OPTIONAL { #{Mu::sparql_escape_uri(case_uri)} frapo:hasReferenceNumber ?reference . }
       OPTIONAL { #{Mu::sparql_escape_uri(case_uri)} skos:comment ?comment . }
+      OPTIONAL { #{Mu::sparql_escape_uri(case_uri)} schema:deliveryMethod ?delivery_method . }
       #{Mu::sparql_escape_uri(case_uri)} schema:customer ?customer_uri .
       ?customer_uri a vcard:VCard ;
         mu:uuid ?customer_id .
@@ -67,7 +73,8 @@ def fetch_case(case_uri)
   _case = {
     identifier: solution[:identifier].value,
     reference: solution[:reference]&.value,
-    comment: solution[:comment]&.value
+    comment: solution[:comment]&.value,
+    delivery_method: solution[:delivery_method]&.value
   }
   [:customer, :contact, :building, :intervention, :request, :offer, :order, :invoice].each do |key|
     id_key = "#{key}_id".to_sym

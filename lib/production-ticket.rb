@@ -1,146 +1,92 @@
 require 'wicked_pdf'
-require_relative './htmlentities'
-require_relative './helpers'
+require_relative './sparql_queries'
+require_relative './document'
 
 module DocumentGenerator
-  class ProductionTicket
-
-    include DocumentGenerator::Helpers
-
-    def initialize()
-      @inline_css = ''
+  class ProductionTicket < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/0b49fae8-3546-4211-9c1e-64f359993c82'
     end
 
-    def generate(path, data)
-      coder = HTMLEntities.new
+    def init_template request
+      template_path = ENV['PRODUCTION_TICKET_TEMPLATE_NL'] || '/templates/productiebon-nl.html'
+      @html = File.read(template_path)
+      @document_title = generate_request_reference request if request
+    end
 
-      template_path = select_template
-      html = File.open(template_path, 'rb') { |file| file.read }
+    def generate
+      case_uri = fetch_uri(@resource_id)
+      _case = fetch_case(case_uri)
+      request = fetch_request(_case[:request][:id]) if _case[:request]
+      offer = fetch_offer(_case[:offer][:id]) if _case[:offer]
+      order = fetch_order(_case[:order][:id]) if _case[:order]
+      planning_event = fetch_calendar_event(_case[:order][:uri]) if _case[:order]
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
 
-      customer = coder.encode(generate_customer(data), :named)
-      html.gsub! '<!-- {{CUSTOMER}} -->', customer
+      init_template(request)
 
-      building = coder.encode(generate_building(data), :named)
-      html.gsub! '<!-- {{BUILDING}} -->', building
+      fill_placeholder('CUSTOMER', generate_customer(customer), encode: true)
+      fill_placeholder('BUILDING', generate_building(building), encode: true)
+      fill_placeholder('CONTACT', generate_contact(contact), encode: true)
 
-      contact = coder.encode(generate_contact(data), :named)
-      html.gsub! '<!-- {{CONTACT}} -->', contact
+      fill_placeholder('EXECUTION', generate_delivery_method_label(_case[:delivery_method]))
 
-      execution = generate_execution_label(data)
-      html.gsub! '<!-- {{EXECUTION}} -->', execution
+      order_date = if order then format_date(order[:date]) else '' end
+      fill_placeholder('DATE_IN', order_date)
 
-      order_date = generate_date_in(data)
-      html.gsub! '<!-- {{DATE_IN}} -->', order_date
+      date_out = generate_date_out(order, planning_event)
+      fill_placeholder('DATE_OUT', date_out)
 
-      date_out = generate_date_out(data)
-      html.gsub! '<!-- {{DATE_OUT}} -->', date_out
+      fill_placeholder('REQUEST_NUMBER', generate_request_reference(request)) if request
+      fill_placeholder('OFFER_NUMBER', offer[:number]) if offer
 
-      request_number = generate_request_number(data)
-      html.gsub! '<!-- {{REQUEST_NUMBER}} -->', request_number
+      fill_placeholder('EXT_REFERENCE', generate_ext_reference(_case))
 
-      offer_number = generate_offer_number(data)
-      html.gsub! '<!-- {{OFFER_NUMBER}} -->', offer_number
-
-      ext_reference = coder.encode(generate_ext_reference(data), :named)
-      html.gsub! '<!-- {{EXT_REFERENCE}} -->', ext_reference
-
-      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
-
-      document_title = generate_request_number(data)
+      # TODO fix relation between document and case
       page_margins = { left: 0, top: 0, bottom: 0, right: 0 }
-      write_to_pdf(path, html, orientation: 'Landscape', margin: page_margins, title: document_title)
+      generate_and_upload_file case_uri, orientation: 'Landscape', margin: page_margins
+      @path
     end
 
-    def select_template
-      ENV['PRODUCTION_TICKET_TEMPLATE_NL'] || '/templates/productiebon-nl.html'
-    end
+    def generate_date_out(order, planning_event)
+      result = '__________________'
 
-    def generate_request_number(data)
-      request = data['offer']['request']
-      if request
-        reference = "#{format_request_number(request['id'])}"
-        visit = request['visit']
-        reference += " #{visit['visitor']}" if visit and visit['visitor']
-        reference
-        else
-          ''
+      if order
+        if planning_event
+          result = "<span class='planning-date'>#{format_date(planning_event[:date])}</span>"
+        elsif order[:expected_date] or order[:required_date]
+          expected_date = if order[:expected_date] then format_date(order[:expected_date]) else '_______' end
+          required_date = if order[:required_date] then format_date(order[:required_date]) else '_______' end
+          result = "#{expected_date} - #{required_date}"
+        end
       end
+
+      result
     end
 
-    def generate_offer_number(data)
-      data['offer']['number']
-    end
-
-    def generate_date_in(data)
-      if data['orderDate']
-        format_date(data['orderDate'])
-      else
-        ''
-      end
-    end
-
-    def generate_date_out(data)
-      if data['planningDate']
-        "<span class='planning-date'>#{format_date(data['planningDate'])}</span>"
-      elsif data['expectedDate'] or data['requiredDate']
-        expected_date = if data['expectedDate'] then format_date(data['expectedDate']) else '_______' end
-        required_date = if data['requiredDate'] then format_date(data['requiredDate']) else '_______' end
-        "#{expected_date} - #{required_date}"
-      else
-        '__________________'
-      end
-    end
-
-    def generate_customer(data)
-      customer = data['customer']
-      hon_prefix = customer['honorificPrefix']
-
-      name = "[#{customer['number']}] "
-      name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and customer['printInFront']
-      name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
-      name += " #{customer['name']}" if customer['name']
-      name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
-      name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not customer['printInFront']
-
-      city = if customer['postalCode'] or customer['city'] then "#{customer['postalCode']} #{customer['city']}" else nil end
-      address = [
-        customer['address1'],
-        customer['address2'],
-        customer['address3'],
-        city
-      ].select { |x| x }.join(' - ')
+    def generate_customer(customer)
+      name = generate_print_name(customer, include_number: true)
+      address = generate_address(customer, nil, include_name: false, address_separator: ' - ')
 
       result = "#{name}<br>#{address}"
 
-      telephones = generate_telephones(customer['number'], 'customers', '; ')
+      telephones = generate_telephones(customer[:uri], separator: '; ')
       result += "<br>#{telephones}" if telephones.length
 
       result
     end
 
-    def generate_building(data)
-      building = data['building']
-
+    def generate_building(building)
       if building
-        hon_prefix = building['honorificPrefix']
-        name = ''
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and building['printInFront']
-        name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
-        name += " #{building['name']}" if building['name']
-        name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not building['printInFront']
-
-        city = if building['postalCode'] or building['city'] then "#{building['postalCode']} #{building['city']}" else nil end
-        address = [
-          building['address1'],
-          building['address2'],
-          building['address3'],
-          city
-        ].select { |x| x }.join(' - ')
+        name = generate_print_name(building)
+        address = generate_address(building, nil, include_name: false, address_separator: ' - ')
 
         result = "#{name}<br>#{address}"
 
-        telephones = generate_telephones(building['id'], 'buildings', '; ')
+        telephones = generate_telephones(building[:uri], separator: '; ')
         result += "<br>#{telephones}" if telephones.length
 
         result
@@ -149,29 +95,14 @@ module DocumentGenerator
       end
     end
 
-    def generate_contact(data)
-      contact = data['contact']
-
+    def generate_contact(contact)
       if contact
-        hon_prefix = contact['honorificPrefix']
-        name = ''
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
-        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
-        name += " #{contact['name']}" if contact['name']
-        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
-
-        city = if contact['postalCode'] or contact['city'] then "#{contact['postalCode']} #{contact['city']}" else nil end
-        address = [
-          contact['address1'],
-          contact['address2'],
-          contact['address3'],
-          city
-        ].select { |x| x }.join('<br>')
+        name = generate_print_name(contact)
+        address = generate_address(contact, nil, include_name: false)
 
         result = "#{name}<br>#{address}"
 
-        telephones = generate_telephones(contact['id'], 'contacts')
+        telephones = generate_telephones(contact[:uri])
         result += "<br>#{telephones}" if telephones.length
 
         result
@@ -180,15 +111,8 @@ module DocumentGenerator
       end
     end
 
-    def generate_execution_label(data)
-      execution = 'Zonder plaatsing'
-      execution = 'Te plaatsen' if data['mustBeInstalled']
-      execution = 'Te leveren' if data['mustBeDelivered']
-      execution
-    end
-
-    def generate_telephones(data_id, scope, separator = '<br>')
-      telephones = fetch_telephones(data_id, scope)
+    def generate_telephones(uri, separator: '<br>')
+      telephones = fetch_telephones(uri)
       top_telephones = telephones.first(2)
 
       formatted_telephones = top_telephones.map do |tel|

@@ -29,13 +29,16 @@ module DocumentGenerator
     ###
     ## Writes the current state of the generator to a PDF document at the given path
     ###
-    def write_file path = @path
-      write_to_pdf(
-        path,
-        @html,
+    def write_file path = @path, options = {}
+      options = options.merge({
         header: { content: @header },
         footer: { content: @footer },
         title: @document_title
+      })
+      write_to_pdf(
+        path,
+        @html,
+        options
       )
       path
     end
@@ -44,11 +47,11 @@ module DocumentGenerator
     ## Writes the generated HTML to a PDF document,
     ## inserts it in the triplestore and moves it to the upload location
     ###
-    def generate_and_upload_file derived_from = nil
+    def generate_and_upload_file derived_from = nil, pdf_generator_options = {}
       # Write PDF to a temporary location (such that it will not be picked up by file upload service yet)
       file_name = File.split(@path).last
       tmp_path = "/tmp/#{file_name}"
-      write_file tmp_path
+      write_file tmp_path, pdf_generator_options
 
       # Insert file in triplestore
       insert_file_in_triplestore tmp_path, derived_from
