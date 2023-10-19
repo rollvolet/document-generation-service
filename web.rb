@@ -112,12 +112,12 @@ post '/cases/:id/production-ticket-templates' do
   send_file path
 end
 
-post '/documents/production-ticket-watermark' do
+post '/cases/:id/watermarked-production-tickets' do
   if params['file']
-    tempfile = params['file'][:tempfile]
+    uploaded_file = params['file'][:tempfile]
     random = (rand * 100000000).to_i
     production_ticket_path = "/tmp/#{random}-production-ticket.pdf"
-    FileUtils.copy(tempfile.path, production_ticket_path)
+    FileUtils.copy(uploaded_file.path, production_ticket_path)
 
     watermark_path = ENV['PRODUCTION_TICKET_WATERMARK_NL'] || '/watermarks/productiebon-nl.pdf'
     watermark = CombinePDF.load(watermark_path).pages[0]
