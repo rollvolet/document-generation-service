@@ -11,18 +11,6 @@ module DocumentGenerator
       ''
     end
 
-    # Language is determined by the language of the contact (if there is one) or customer.
-    # Language of the building doesn't matter
-    def select_language(data)
-      language = 'NED'
-      if data['contact'] and data['contact']['language']
-        language = data['contact']['language']['code']
-      elsif data['customer'] and data['customer']['language']
-        language = data['customer']['language']['code']
-      end
-      language
-    end
-
     def select_footer(data, language)
       if language == 'FRA'
         ENV['FOOTER_TEMPLATE_FR'] || '/templates/footer-fr.html'
@@ -43,29 +31,6 @@ module DocumentGenerator
       name += " #{data[:suffix]}" if data[:suffix] and data[:print_suffix]
       name += " #{data[:honorific_prefix]}" if data[:honorific_prefix] and not data[:print_suffix_in_front]
       name
-    end
-
-    def generate_building(data)
-      building = data['building']
-
-      if building
-        hon_prefix = building['honorificPrefix']
-        name = ''
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and building['printInFront']
-        name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
-        name += " #{building['name']}" if building['name']
-        name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not building['printInFront']
-        addresslines = "#{name}<br>"
-        addresslines += "#{building['address1']}<br>" if building['address1']
-        addresslines += "#{building['address2']}<br>" if building['address2']
-        addresslines += "#{building['address3']}<br>" if building['address3']
-        addresslines += "#{building['postalCode']} #{building['city']}" if building['postalCode'] or building['city']
-
-        addresslines
-      else
-        hide_element('building')
-      end
     end
 
     def generate_address(record, hide_class = nil, include_name: true, address_separator: '<br>')
@@ -162,9 +127,7 @@ module DocumentGenerator
     end
 
     def generate_ext_reference(data)
-      if data['reference']
-        data['reference']
-      elsif data[:reference]
+      if data[:reference]
         data[:reference]
       else
         hide_element('references--ext_reference')
@@ -190,14 +153,6 @@ module DocumentGenerator
       [date, time]
     end
 
-    def generate_request_number(data)
-      format_request_number(data['id'].to_s)
-    end
-
-    def generate_request_date(data)
-      if data['requestDate'] then format_date(data['requestDate']) else '' end
-    end
-
     def generate_invoice_number(data)
       number = data[:number].to_s || ''
       if number.length > 4
@@ -206,11 +161,6 @@ module DocumentGenerator
       else
         number
       end
-    end
-
-    def generate_invoice_date(data)
-      invoice_date = data['invoiceDate'] || data[:invoice_date]
-      if invoice_date then format_date(invoice_date) else '' end
     end
 
     def generate_payment_due_date(invoice)
@@ -291,10 +241,6 @@ module DocumentGenerator
 
     def format_date(date)
       DateTime.parse(date).strftime("%d/%m/%Y")
-    end
-
-    def format_date_object(date)
-      date.strftime("%d/%m/%Y")
     end
 
     def format_telephone(prefix, value)
