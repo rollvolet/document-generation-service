@@ -2,7 +2,6 @@ require 'combine_pdf'
 require 'facets'
 
 require_relative 'lib/visit-report'
-require_relative 'lib/visit-summary'
 require_relative 'lib/intervention-report'
 require_relative 'lib/offer-document'
 require_relative 'lib/order-document'
@@ -27,18 +26,6 @@ end
 before do
   session = session_id_header request
   @user = fetch_user_for_session session
-end
-
-post '/documents/visit-summary' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  path = "/tmp/#{Mu::generate_uuid}-bezoekrapport.pdf"
-
-  generator = DocumentGenerator::VisitSummary.new
-  generator.generate(path, json_body)
-
-  send_file path
 end
 
 post '/requests/:id/documents' do
