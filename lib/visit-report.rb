@@ -1,240 +1,108 @@
 require 'wicked_pdf'
-require_relative './htmlentities'
-require_relative './helpers'
 require_relative './sparql_queries'
+require_relative './document'
 
 module DocumentGenerator
-  class VisitReport
-
-    include DocumentGenerator::Helpers
-
-    def initialize
-      @inline_css = ''
+  class VisitReport < Document
+    def initialize(*args, **keywords)
+      super(*args, **keywords)
+      @file_type = 'http://data.rollvolet.be/concepts/f5b9c371-a0ed-4476-90a1-3e73d5d4f09e'
     end
 
-    def generate(path, data, history)
-      coder = HTMLEntities.new
+    def init_template request
+      request_ref = generate_request_reference request
+      template_path = ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'
 
-      template_path = select_template
-      html = File.open(template_path, 'rb') { |file| file.read }
+      @html = File.open(template_path, 'rb') { |file| file.read }
 
-      request_date = generate_request_date(data)
-      html.gsub! '<!-- {{DATE}} -->', request_date
-
-      request_number = generate_request_number(data)
-      request_number += " #{data['visitorInitials']}" if data['visitorInitials']
-      html.gsub! '<!-- {{NUMBER}} -->', request_number
-
-      way_of_entry = (data['wayOfEntry'] && data['wayOfEntry']['name']) || ''
-      html.gsub! '<!-- {{WAY_OF_ENTRY}} -->', way_of_entry
-
-      visit = generate_visit(data)
-      html.gsub! '<!-- {{VISIT_DATE}} -->', visit[0]
-      html.gsub! '<!-- {{VISIT_TIME}} -->', visit[1]
-
-      visitor = coder.encode(generate_visitor(data), :named)
-      html.gsub! '<!-- {{VISITOR}} -->', visitor
-
-      language = generate_language(data)
-      html.gsub! '<!-- {{LANGUAGE}} -->', language
-
-      customer = coder.encode(generate_customer(data), :named)
-      html.gsub! '<!-- {{CUSTOMER}} -->', customer
-
-      customer_email_address = generate_customer_entity_email_addresses(data['customer'], 'customers')
-      html.gsub! '<!-- {{CUSTOMER_EMAIL_ADDRESS}} -->', customer_email_address
-
-      contactlines = coder.encode(generate_contact(data), :named)
-      html.gsub! '<!-- {{CONTACTLINES}} -->', contactlines
-
-      contact_email_address = generate_customer_entity_email_addresses(data['contact'], 'contacts')
-      html.gsub! '<!-- {{CONTACT_EMAIL_ADDRESS}} -->', contact_email_address
-
-      vat_number = generate_vat_number(data)
-      html.gsub! '<!-- {{VAT_NUMBER}} -->', vat_number
-
-      building_address = coder.encode(generate_building_address(data), :named)
-      html.gsub! '<!-- {{BUILDING_ADDRESS}} -->', building_address
-
-      employee = coder.encode(generate_employee_name(data), :named)
-      html.gsub! '<!-- {{EMPLOYEE}} -->', employee
-
-      description = coder.encode(data['description'] || '', :named)
-      html.gsub! '<!-- {{DESCRIPTION}} -->', description
-
-      history = coder.encode(generate_order_history(history), :named)
-      html.gsub! '<!-- {{ORDER_HISTORY}} -->', history
-
-      html.gsub! '<!-- {{INLINE_CSS}} -->', @inline_css
-
-      document_title = "AD#{request_number}"
-      write_to_pdf(path, html, title: document_title)
+      @document_title = "Bezoekrapport #{request_ref}"
     end
 
-    def select_template
-      ENV['VISIT_REPORT_TEMPLATE_NL'] || '/templates/bezoekrapport-nl.html'
-    end
+    def generate
+      request = fetch_request(@resource_id)
+      _case = fetch_case(request[:case_uri])
+      customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
+      contact = fetch_contact(_case[:contact][:uri]) if _case[:contact]
+      building = fetch_building(_case[:building][:uri]) if _case[:building]
 
-    def generate_language(data)
-      if data['contact'] and data['contact']['language']
-        data['contact']['language']['code']
-      elsif data['customer']['language']
-        data['customer']['language']['code']
+      init_template(request)
+
+      request_date = format_date(request[:date])
+      fill_placeholder('DATE', request_date)
+
+      request_number = format_request_number(request[:number])
+      request_number += " #{request[:visitor][:initials]}" if request.dig(:visitor, :initials)
+      fill_placeholder('NUMBER', request_number)
+
+      fill_placeholder('WAY_OF_ENTRY', request[:way_of_entry] || '')
+
+      visit = generate_visit(request[:uri])
+      fill_placeholder('VISIT_DATE', visit[0])
+      fill_placeholder('VISIT_TIME', visit[1])
+
+      visitor = request.dig(:visitor, :name) || ''
+      fill_placeholder('VISITOR', visitor, encode: true)
+
+      language_code = contact&.dig(:language, :code)
+      language_code = customer.dig(:language, :code) unless language_code
+      fill_placeholder('LANGUAGE', language_code || '')
+
+      customer_data = generate_contactlines(customer: customer, address: customer[:address])
+      fill_placeholder('CUSTOMER', customer_data, encode: true)
+
+      customer_email_address = generate_email_addresses(customer[:uri])
+      if customer_email_address.length > 0
+        fill_placeholder('CUSTOMER_EMAIL_ADDRESS', customer_email_address.join(', '))
       else
-        ''
-      end
-    end
-
-    def generate_visit(data)
-      date = ''
-      time = ''
-
-      calendar_event = fetch_calendar_event(data['id'], scope = 'requests')
-      if calendar_event
-        date = format_date(calendar_event[:date])
-
-        if calendar_event[:subject] and calendar_event[:subject].include? ' | '
-          time = calendar_event[:subject].split(' | ').first.strip
-        end
+        hide_element('email--customers')
       end
 
-      [date, time]
-    end
-
-    def generate_visitor(data)
-      if data['visitor'] and data['visitor'] != '(geen)'
-        data['visitor']
-      else
-        ''
-      end
-    end
-
-    def generate_vat_number(data)
-      if data['customer']['vatNumber']
-        format_vat_number(data['customer']['vatNumber'])
-      else
-        hide_element('table .col .vat-number')
-      end
-    end
-
-    def generate_customer(data)
-      customer = data['customer']
-
-      honorific_prefix = customer['honorificPrefix']
-
-      name = ''
-      name += honorific_prefix['name'] if honorific_prefix and customer['printInFront']
-      name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
-      name += " #{customer['name']}" if customer['name']
-      name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
-      name += " #{honorific_prefix['name']}" if honorific_prefix and not customer['printInFront']
-      name
-
-      address = [ customer['address1'],
-        customer['address2'],
-        customer['address3'],
-        "#{customer['postalCode']} #{customer['city']}"
-      ].find_all { |a| a }.join('<br>')
-
-      telephones = fetch_telephones(customer['number'])
-      top_telephones = telephones.first(2)
-
-      contactlines = "<div class='contactline contactline--name'>#{name}</div>"
-      contactlines += "<div class='contactline contactline--address'>#{address}</div>"
-      contactlines += "<div class='contactline contactline--telephones'>"
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel[:prefix], tel[:value])
-        note = if tel[:note] then "(#{tel[:note]})" else '' end
-        contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel} #{note}</div>"
-      end
-      contactlines += "</div>"
-      contactlines
-    end
-
-    def generate_building_address(data)
-      building = data['building']
-
-      if building
-        honorific_prefix = building['honorificPrefix']
-
-        name = ''
-        name += honorific_prefix['name'] if honorific_prefix and building['printInFront']
-        name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
-        name += " #{building['name']}" if building['name']
-        name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
-        name += " #{honorific_prefix['name']}" if honorific_prefix and not building['printInFront']
-
-        [ name,
-          building['address1'],
-          building['address2'],
-          building['address3'],
-          "#{building['postalCode']} #{building['city']}"
-        ].find_all { |a| a and a != "" }.join('<br>')
-      else
-        hide_element('table .col .building-address')
-      end
-    end
-
-    def generate_contact(data)
-      contact = data['contact']
       if contact
-        hon_prefix = contact['honorificPrefix']
-        name = ''
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
-        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
-        name += " #{contact['name']}" if contact['name']
-        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
+        contactlines = generate_contactlines(contact: contact)
+        fill_placeholder('CONTACTLINES', contactlines, encode: true)
 
-        telephones = fetch_telephones(contact['id'], 'contacts')
-        top_telephones = telephones.first(2)
-
-        contactlines = ''
-        contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
-        contactlines += "<div class='contactline contactline--telephones'>"
-        top_telephones.each do |tel|
-          formatted_tel = format_telephone(tel[:prefix], tel[:value])
-          note = if tel[:note] then "(#{tel[:note]})" else '' end
-          contactlines += "<div class='contactline contactline--telephone'>#{formatted_tel}#{note}</div>"
+        contact_email_address = generate_email_addresses(contact[:uri])
+        if contact_email_address.length > 0
+          fill_placeholder('CONTACT_EMAIL_ADDRESS', contact_email_address.join(', '))
+        else
+          hide_element('email--contacts')
         end
-        contactlines += "</div>"
-        contactlines
       else
         hide_element('table .col .contact')
       end
-    end
 
-    def generate_customer_entity_email_addresses(customer, scope)
-      if customer.nil?
-        formatted_emails = []
+      if customer[:vat_number]
+        vat_number = format_vat_number(customer[:vat_number])
+        fill_placeholder('VAT_NUMBER', vat_number)
       else
-        customer_id = if scope == 'customers' then customer['number'] else customer['id'] end
-        emails = fetch_emails(customer_id, scope)
-        top_emails = emails.first(2)
-        formatted_emails = top_emails.collect do |email|
-          address = email[:value]["mailto:".length..-1]
-          note = if email[:note] then "(#{email[:note]})" else '' end
-          "#{address} #{note}"
-        end
+        hide_element('table .col .vat-number')
       end
 
-      if formatted_emails.length > 0 then formatted_emails.join(', ') else hide_element("email--#{scope}") end
-    end
+      building_address = generate_address(building, 'table .col .building-address')
+      fill_placeholder('BUILDING_ADDRESS', building_address, encode: true)
 
-    def generate_employee_name(data)
-      if data['employee']
-        data['employee']
+      if request[:employee]
+        fill_placeholder('EMPLOYEE', request[:employee], encode: true)
       else
         hide_element('employee--name')
-        ''
       end
+
+      fill_placeholder('DESCRIPTION', request[:description] || '', encode: true)
+
+      history = generate_offer_history(customer[:uri], request[:case_uri])
+      fill_placeholder('ORDER_HISTORY', history, encode: true)
+
+      generate_and_upload_file request[:uri]
+      @path
     end
 
-    def generate_order_history(history)
+    def generate_offer_history(customer_uri, case_uri)
+      history = fetch_recent_offers(customer_uri, case_uri)
+
       entries = history.map do |entry|
-        order_flag = if entry['isOrdered'] then 'x' else '-' end
-        date = DateTime.parse(entry['offer']['offerDate']).strftime("%m/%Y")
-        "<div>#{order_flag} #{date} AD #{format_request_number(entry['offer']['requestNumber'])} #{entry['visitor']}</div>"
+        order_flag = if entry[:is_ordered] then 'x' else '-' end
+        date = entry[:date]&.strftime("%m/%Y")
+        "<div>#{order_flag} #{date} #{format_request_number(entry[:number])} #{entry[:visitor]}</div>"
       end
       entries.join
     end

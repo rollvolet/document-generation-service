@@ -2,32 +2,6 @@ module DocumentGenerator
   module Helpers
     BASE_URI = 'http://data.rollvolet.be/%{resource}/%{id}'
 
-    def write_to_pdf(path, html, options = {})
-      default_options = {
-        margin: {
-          left: 0,
-          top: 14, # top margin on each page
-          bottom: 20, # height (mm) of the footer
-          right: 0
-        },
-        disable_smart_shrinking: true,
-        print_media_type: true,
-        page_size: 'A4',
-        orientation: 'Portrait',
-        header: { content: '' },
-        footer: { content: '' }
-      }
-
-      options = default_options.merge options
-
-      pdf = WickedPdf.new.pdf_from_string(html, options)
-
-      # Write HTML to a document for debugging purposes
-      html_path = path.sub '.pdf', '.html'
-      File.open(html_path, 'wb') { |file| file << html }
-      File.open(path, 'wb') { |file| file << pdf }
-    end
-
     def hide_element(css_class)
       display_element(css_class, 'none')
     end
@@ -35,18 +9,6 @@ module DocumentGenerator
     def display_element(css_class, display = 'block')
       @inline_css += ".#{css_class} { display: #{display} }  "
       ''
-    end
-
-    # Language is determined by the language of the contact (if there is one) or customer.
-    # Language of the building doesn't matter
-    def select_language(data)
-      language = 'NED'
-      if data['contact'] and data['contact']['language']
-        language = data['contact']['language']['code']
-      elsif data['customer'] and data['customer']['language']
-        language = data['customer']['language']['code']
-      end
-      language
     end
 
     def select_footer(data, language)
@@ -61,86 +23,112 @@ module DocumentGenerator
       BASE_URI % { :resource => resource, :id => id }
     end
 
-    def generate_building(data)
-      building = data['building']
+    def generate_print_name(data, include_number: false)
+      name = if include_number then "[#{data[:number]}]" else '' end
+      name += data[:honorific_prefix] if data[:honorific_prefix] and data[:print_suffix_in_front]
+      name += " #{data[:first_name]}" if data[:first_name] and data[:print_prefix]
+      name += " #{data[:last_name]}" if data[:last_name]
+      name += " #{data[:suffix]}" if data[:suffix] and data[:print_suffix]
+      name += " #{data[:honorific_prefix]}" if data[:honorific_prefix] and not data[:print_suffix_in_front]
+      name
+    end
 
-      if building
-        hon_prefix = building['honorificPrefix']
-        name = ''
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and building['printInFront']
-        name += " #{building['prefix']}" if building['prefix'] and building['printPrefix']
-        name += " #{building['name']}" if building['name']
-        name += " #{building['suffix']}" if building['suffix'] and building['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not building['printInFront']
-        addresslines = "#{name}<br>"
-        addresslines += "#{building['address1']}<br>" if building['address1']
-        addresslines += "#{building['address2']}<br>" if building['address2']
-        addresslines += "#{building['address3']}<br>" if building['address3']
-        addresslines += "#{building['postalCode']} #{building['city']}" if building['postalCode'] or building['city']
-
+    def generate_address(record, hide_class = nil, include_name: true, address_separator: '<br>')
+      if record
+        addresslines = if include_name then "#{generate_print_name(record)}<br>" else "" end
+        if record[:address]
+          if record[:address][:street]
+            streetlines = record[:address][:street].gsub(/\n/, address_separator)
+            addresslines += "#{streetlines}#{address_separator}"
+          end
+          addresslines += "#{record[:address][:postal_code]} #{record[:address][:city]}" if record[:address][:postal_code] or record[:address][:city]
+        end
         addresslines
-      else
-        hide_element('building')
+      elsif hide_class
+        hide_element(hide_class)
       end
     end
 
-    # Address is always the address of the customer, even if a contact is attached
-    def generate_addresslines(data)
-      customer = data['customer']
-      hon_prefix = customer['honorificPrefix']
-
-      name = ''
-      name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and customer['printInFront']
-      name += " #{customer['prefix']}" if customer['prefix'] and customer['printPrefix']
-      name += " #{customer['name']}" if customer['name']
-      name += " #{customer['suffix']}" if customer['suffix'] and customer['printSuffix']
-      name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not customer['printInFront']
-
-      addresslines = if name then "#{name}<br>" else "" end
-      addresslines += "#{customer['address1']}<br>" if customer['address1']
-      addresslines += "#{customer['address2']}<br>" if customer['address2']
-      addresslines += "#{customer['address3']}<br>" if customer['address3']
-      addresslines += customer['postalCode'] if customer['postalCode']
-      addresslines += " #{customer['city']}" if customer['city']
-
-      addresslines
-    end
-
-    def generate_contactlines(data)
-      vat_number = data['customer']['vatNumber']
-      contactlines = if vat_number then "<div class='contactline contactline--vat-number'>#{format_vat_number(vat_number)}</div>" else '' end
-
-      contact = data['contact']
-      if contact
-        hon_prefix = contact['honorificPrefix']
-        name = 'Contact: '
-        name += hon_prefix['name'] if hon_prefix and hon_prefix['name'] and contact['printInFront']
-        name += " #{contact['prefix']}" if contact['prefix'] and contact['printPrefix']
-        name += " #{contact['name']}" if contact['name']
-        name += " #{contact['suffix']}" if contact['suffix'] and contact['printSuffix']
-        name += " #{hon_prefix['name']}" if hon_prefix and hon_prefix['name'] and not contact['printInFront']
-      end
+    def generate_contactlines(customer: nil, contact: nil, address: nil)
+      contactlines =
+        if customer and customer[:vat_number]
+        then "<div class='contactline contactline--vat-number'>#{format_vat_number(customer[:vat_number])}</div>"
+        else ''
+        end
 
       if contact
-        telephones = fetch_telephones(contact['id'], 'contacts')
-      else
-        telephones = fetch_telephones(data['customer']['number'])
+        print_name = generate_print_name(contact)
+        name = if customer then "Contact: #{print_name}" else print_name end
+        contactlines += "<div class='contactline contactline--name'>#{name}</div>"
+      elsif customer and address
+        contactlines += "<div class='contactline contactline--name'>#{generate_print_name(customer)}</div>"
       end
-      top_telephones = telephones.first(2)
 
-      contactlines += if name then "<div class='contactline contactline--name'>#{name}</div>" else '' end
-      contactlines += "<div class='contactline contactline--telephones'>"
-      top_telephones.each do |tel|
-        formatted_tel = format_telephone(tel[:prefix], tel[:value])
-        contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
+      if address
+        addresslines = [
+          address[:street],
+          "#{address[:postal_code]} #{address[:city]}"
+        ].find_all { |a| a }.map { |a| a.gsub(/\n/, '<br>') }.join('<br>')
+        contactlines += "<div class='contactline contactline--address'>#{addresslines}</div>" if addresslines
       end
-      contactlines += "</div>"
+
+      if customer or contact
+        contactlines += "<div class='contactline contactline--telephones'>"
+        telephones = if contact then fetch_telephones(contact[:uri]) else fetch_telephones(customer[:uri]) end
+        top_telephones = telephones.first(2)
+        top_telephones.each do |tel|
+          formatted_tel = format_telephone(tel[:prefix], tel[:value])
+          note = if tel[:note] then "(#{tel[:note]})" else '' end
+          contactlines += "<span class='contactline contactline--telephone'>#{formatted_tel}</span>"
+        end
+        contactlines += "</div>"
+      end
+
       contactlines
     end
 
+    def generate_email_addresses(record_uri)
+      if record_uri.nil?
+        formatted_emails = []
+      else
+        emails = fetch_emails(record_uri)
+        top_emails = emails.first(2)
+        formatted_emails = top_emails.collect do |email|
+          address = email[:value]["mailto:".length..-1]
+          note = if email[:note] then "(#{email[:note]})" else '' end
+          "#{address} #{note}"
+        end
+      end
+
+      formatted_emails
+    end
+
+    def generate_request_reference(request)
+      request_number = format_request_number(request[:number])
+      request_number += " #{request[:visitor][:initials]}" if request.dig(:visitor, :initials)
+      request_number
+    end
+
+    def generate_own_reference(request: nil, intervention: nil)
+      if request
+        "<b>#{generate_request_reference(request)}</b>"
+      elsif intervention
+        "<b>#{format_intervention_number(intervention[:number])}</b>"
+      else
+        hide_element('references--own_reference')
+      end
+    end
+
+    def generate_offer_reference(offer, request)
+      own_reference = generate_own_reference(request: request)
+      version = if offer[:document_version] == 'v1' then '' else offer[:document_version] end
+      own_reference += "<br><span class='note'>#{offer[:number]} #{version}</span>"
+      own_reference
+    end
+
     def generate_ext_reference(data)
-      if data['reference']
-        data['reference']
+      if data[:reference]
+        data[:reference]
       else
         hide_element('references--ext_reference')
         hide_element('row--ext-reference')
@@ -149,8 +137,24 @@ module DocumentGenerator
       end
     end
 
+    def generate_visit(record_uri)
+      date = ''
+      time = ''
+
+      calendar_event = fetch_calendar_event(record_uri)
+      if calendar_event
+        date = format_date(calendar_event[:date])
+
+        if calendar_event[:subject] and calendar_event[:subject].include? ' | '
+          time = calendar_event[:subject].split(' | ').first.strip
+        end
+      end
+
+      [date, time]
+    end
+
     def generate_invoice_number(data)
-      number = data['number'].to_s || ''
+      number = data[:number].to_s || ''
       if number.length > 4
         i = number.length - 4
         "#{number[0..i-1]}/#{number[i..-1]}"
@@ -159,16 +163,13 @@ module DocumentGenerator
       end
     end
 
-    def generate_request_number(data)
-      format_request_number(data['id'].to_s)
-    end
-
-    def generate_invoice_date(data)
-      if data['invoiceDate'] then format_date(data['invoiceDate']) else '' end
-    end
-
-    def generate_request_date(data)
-      if data['requestDate'] then format_date(data['requestDate']) else '' end
+    def generate_payment_due_date(invoice)
+      if invoice[:due_date]
+        format_date(invoice[:due_date])
+      else
+        hide_element('payment-notification--deadline')
+        ''
+      end
     end
 
     def generate_bank_reference_with_base(base, number)
@@ -180,9 +181,30 @@ module DocumentGenerator
       "+++#{reference[0..2]}/#{reference[3..6]}/#{reference[7..-1]}+++"
     end
 
+    def generate_delivery_method_label(delivery_method)
+      case delivery_method
+      when 'http://data.rollvolet.be/concepts/e8ac5c18-628f-435a-ac36-3c6704c3ff19'
+        'Te leveren'
+      when 'http://data.rollvolet.be/concepts/89db0214-65d1-444d-9c19-a0e772113b8a'
+        'Te plaatsen'
+      else
+        'Zonder plaatsing'
+      end
+    end
+
     def format_request_number(number)
       if number
-        number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        formatted_number = number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        "AD #{formatted_number}"
+      else
+        number
+      end
+    end
+
+    def format_intervention_number(number)
+      if number
+        formatted_number = number.to_s.reverse.chars.each_slice(3).map(&:join).join(".").reverse
+        "IR #{formatted_number}"
       else
         number
       end
@@ -219,10 +241,6 @@ module DocumentGenerator
 
     def format_date(date)
       DateTime.parse(date).strftime("%d/%m/%Y")
-    end
-
-    def format_date_object(date)
-      date.strftime("%d/%m/%Y")
     end
 
     def format_telephone(prefix, value)

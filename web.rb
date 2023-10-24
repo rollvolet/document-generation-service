@@ -1,7 +1,7 @@
 require 'combine_pdf'
+require 'facets'
 
 require_relative 'lib/visit-report'
-require_relative 'lib/visit-summary'
 require_relative 'lib/intervention-report'
 require_relative 'lib/offer-document'
 require_relative 'lib/order-document'
@@ -9,9 +9,6 @@ require_relative 'lib/delivery-note'
 require_relative 'lib/production-ticket'
 require_relative 'lib/invoice-document'
 require_relative 'lib/deposit-invoice-document'
-require_relative 'lib/vat-certificate'
-
-# TODO file cleanup job?
 
 configure :development do
   class WickedPdf # monkey patch useful for debugging
@@ -26,143 +23,88 @@ configure :development do
 
 end
 
-post '/documents/visit-summary' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+before do
+  session = session_id_header request
+  @user = fetch_user_for_session session
+end
 
-  path = "/tmp/#{Mu.generate_uuid}-bezoekrapport.pdf"
-
-  generator = DocumentGenerator::VisitSummary.new
-  generator.generate(path, json_body)
-
-  # TODO cleanup temporary created files of WickedPdf
+post '/requests/:id/documents' do
+  generator = DocumentGenerator::VisitReport.new id: params['id'], user: @user
+  path = generator.generate
 
   send_file path
 end
 
-post '/documents/visit-report' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  data = json_body['request']
-  # Workaround to embed visitor initals in the request object
-  data['visitorInitials'] = json_body['visitorInitials']
-  history = json_body['history']
-  id = data['id']
-  path = "/tmp/#{id}-bezoekrapport.pdf"
-
-  generator = DocumentGenerator::VisitReport.new
-  generator.generate(path, data, history)
-
-  # TODO cleanup temporary created files of WickedPdf
+post '/interventions/:id/documents' do
+  generator = DocumentGenerator::InterventionReport.new id: params['id'], user: @user
+  path = generator.generate
 
   send_file path
 end
 
-post '/documents/intervention-report' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/offers/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  data = json_body['intervention']
-  id = data['id']
-  path = "/tmp/#{id}-interventierapport.pdf"
-
-  generator = DocumentGenerator::InterventionReport.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
+  generator = DocumentGenerator::OfferDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate
 
   send_file path
 end
 
-post '/documents/offer' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/orders/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  # Workaround to embed visitor initals in the offer object
-  data = json_body['offer']
-  if data['request']
-    data['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-offerte.pdf"
-
-  generator = DocumentGenerator::OfferDocument.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
+  generator = DocumentGenerator::OrderDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate
 
   send_file path
 end
 
-post '/documents/order' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/orders/:id/delivery-notes' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  # Workaround to embed visitor initals in the offer object
-  data = json_body['order']
-  if data['offer'] and data['offer']['request']
-    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-bestelbon.pdf"
-
-  generator = DocumentGenerator::OrderDocument.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
+  generator = DocumentGenerator::DeliveryNote.new id: params['id'], language: language, user: @user
+  path = generator.generate
 
   send_file path
 end
 
-post '/documents/delivery-note' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/deposit-invoices/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  # Workaround to embed visitor initals in the offer object
-  data = json_body['order']
-  if data['offer'] and data['offer']['request']
-    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-leveringsbon.pdf"
-  generator = DocumentGenerator::DeliveryNote.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
+  generator = DocumentGenerator::DepositInvoiceDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate(data)
 
   send_file path
 end
 
-post '/documents/production-ticket' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
+post '/invoices/:id/documents' do
+  data = @json_body['data']
+  language = data['attributes']['language']
 
-  data = json_body['order']
-  # Workaround to embed visitor initals in the offer object
-  if data['offer'] and data['offer']['request']
-    data['offer']['request']['visit'] = { 'visitor' => json_body['visitor'] }
-  end
-
-  id = data['id']
-  path = "/tmp/#{id}-productiebon.pdf"
-  generator = DocumentGenerator::ProductionTicket.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
+  generator = DocumentGenerator::InvoiceDocument.new id: params['id'], language: language, user: @user
+  path = generator.generate(data)
 
   send_file path
 end
 
-post '/documents/production-ticket-watermark' do
+post '/cases/:id/production-ticket-templates' do
+  generator = DocumentGenerator::ProductionTicket.new id: params['id'], user: @user
+  path = generator.generate
+
+  send_file path
+end
+
+post '/cases/:id/watermarked-production-tickets' do
   if params['file']
-    tempfile = params['file'][:tempfile]
+    uploaded_file = params['file'][:tempfile]
     random = (rand * 100000000).to_i
     production_ticket_path = "/tmp/#{random}-production-ticket.pdf"
-    FileUtils.copy(tempfile.path, production_ticket_path)
+    FileUtils.copy(uploaded_file.path, production_ticket_path)
 
     watermark_path = ENV['PRODUCTION_TICKET_WATERMARK_NL'] || '/watermarks/productiebon-nl.pdf'
     watermark = CombinePDF.load(watermark_path).pages[0]
@@ -173,8 +115,6 @@ post '/documents/production-ticket-watermark' do
       path = "/tmp/#{random}-production-ticket-watermark.pdf"
       pdf.save path
 
-      # TODO cleanup temporary created files
-
       send_file path
     rescue CombinePDF::ParsingError
       # log.warn "Unable to parse incoming production ticket PDF and add a watermark. Just returning the original production ticket instead."
@@ -183,59 +123,4 @@ post '/documents/production-ticket-watermark' do
   else
     halt 400, { title: 'File is required' }
   end
-end
-
-post '/documents/invoice' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  # Workaround to embed visitor initals in the invoice object
-  data = json_body['invoice']
-  data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
-
-  id = data['id']
-  path = "/tmp/#{id}-factuur.pdf"
-
-  generator = DocumentGenerator::InvoiceDocument.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
-
-  send_file path
-end
-
-post '/documents/deposit-invoice' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  # Workaround to embed visitor initals in the deposit invoice object
-  data = json_body['invoice']
-  data['visit'] = if json_body['visitor'] then { 'visitor' => json_body['visitor'] } else nil end
-
-  id = data['id']
-  path = "/tmp/#{id}-voorschotfactuur.pdf"
-
-  generator = DocumentGenerator::DepositInvoiceDocument.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
-
-  send_file path
-end
-
-post '/documents/certificate' do
-  request.body.rewind
-  json_body = JSON.parse request.body.read
-
-  data = json_body['invoice']
-
-  id = data['id']
-  path = "/tmp/#{id}-attest.pdf"
-
-  generator = DocumentGenerator::VatCertificate.new
-  generator.generate(path, data)
-
-  # TODO cleanup temporary created files of WickedPdf
-
-  send_file path
 end
