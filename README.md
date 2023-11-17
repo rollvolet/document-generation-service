@@ -10,6 +10,7 @@ services:
     volumes:
       - ./config/templates:/templates
       - ./config/watermarks:/watermarks
+      - ./data/filedrop:/share
 ```
 
 ## Configuration
@@ -56,4 +57,4 @@ The header and footer templates are included in the following documents:
 * invoice
 
 ### Volumes
-All generated files (final output as well as intermediary files) are stored in `/tmp`.
+All generated files are stored in `/share`.
