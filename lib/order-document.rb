@@ -31,6 +31,7 @@ module DocumentGenerator
     def generate
       order = fetch_order(@resource_id)
       _case = fetch_case(order[:case_uri])
+      planning_event = fetch_calendar_event(order[:uri])
       request = fetch_request(_case[:request][:id]) if _case[:request]
       offer = fetch_offer(_case[:offer][:id]) if _case[:offer]
       customer = fetch_customer(_case[:customer][:uri]) if _case[:customer]
@@ -41,16 +42,21 @@ module DocumentGenerator
 
       fill_placeholder('DATE', format_date(order[:date]))
 
-      if order[:expected_date]
-        fill_placeholder('EXPECTED_DATE', format_date(order[:expected_date]))
-      else
-        hide_element('expected-date')
-      end
-
-      if order[:required_date]
-        fill_placeholder('REQUIRED_DATE', format_date(order[:required_date]))
-      else
+      if planning_event&[:date]
+        fill_placeholder('EXPECTED_DATE', format_date(planning_event[:date]))
         hide_element('required-date')
+      else
+        if order[:expected_date]
+          fill_placeholder('EXPECTED_DATE', format_date(order[:expected_date]))
+        else
+          hide_element('expected-date')
+        end
+
+        if order[:required_date]
+          fill_placeholder('REQUIRED_DATE', format_date(order[:required_date]))
+        else
+          hide_element('required-date')
+        end
       end
 
       own_reference = generate_offer_reference(offer, request)
