@@ -78,7 +78,7 @@ module DocumentGenerator
         hide_element('table .col .vat-number')
       end
 
-      building_address = generate_address(building, 'table .col .building-address')
+      building_address = generate_address(building, 'table .col .building-address', include_telephones: true)
       fill_placeholder('BUILDING_ADDRESS', building_address, encode: true)
 
       if request[:employee]

@@ -33,7 +33,7 @@ module DocumentGenerator
       name
     end
 
-    def generate_address(record, hide_class = nil, include_name: true, address_separator: '<br>')
+    def generate_address(record, hide_class = nil, include_name: true, include_telephones: false, address_separator: '<br>')
       if record
         addresslines = if include_name then "#{generate_print_name(record)}<br>" else "" end
         if record[:address]
@@ -43,6 +43,17 @@ module DocumentGenerator
           end
           addresslines += "#{record[:address][:postal_code]} #{record[:address][:city]}" if record[:address][:postal_code] or record[:address][:city]
         end
+
+        if include_telephones
+          telephones = fetch_telephones(record[:uri])
+          top_telephones = telephones.first(2)
+          top_telephones.each do |tel|
+            formatted_tel = format_telephone(tel[:prefix], tel[:value])
+            note = if tel[:note] then "(#{tel[:note]})" else '' end
+            addresslines += "#{address_separator}#{formatted_tel}"
+          end
+        end
+
         addresslines
       elsif hide_class
         hide_element(hide_class)
